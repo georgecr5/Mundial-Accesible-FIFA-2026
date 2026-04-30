@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sigue El mundial FIFA 2026</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 1300px; margin: auto; background-color: #f0f2f5; }
+        h1 { color: #1a202c; margin-bottom: 5px; }
+        .creditos { font-size: 1.1em; color: #4a5568; font-weight: bold; border-bottom: 2px solid #cbd5e0; padding-bottom: 15px; margin-top: 0; margin-bottom: 20px; }
+        
+        .nav-links { margin-bottom: 20px; padding: 15px; background: #e2e8f0; border-radius: 8px; display: flex; gap: 20px; flex-wrap: wrap;}
+        .nav-links a { color: #2b6cb0; font-weight: bold; text-decoration: none; padding: 5px 10px; border: 2px solid #2b6cb0; border-radius: 6px; }
+
+        details { background: #ffffff; border: 1px solid #cbd5e0; border-radius: 12px; margin-bottom: 30px; padding: 10px 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        summary { font-size: 1.5em; font-weight: bold; color: #2d3748; cursor: pointer; padding: 10px 0; outline: none; }
+        summary:focus { color: #2b6cb0; border-bottom: 2px solid #2b6cb0; }
+        
+        h2 { color: #1a202c; border-bottom: 2px solid #cbd5e0; padding-bottom: 8px; margin-top: 40px; background: #e2e8f0; padding: 10px; border-radius: 8px;}
+        .grupo-container { margin-bottom: 50px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; transition: background-color 0.8s ease; }
+        .partido-card { margin-bottom: 15px; padding: 15px; background: rgba(255, 255, 255, 0.9); border: 1px solid #edf2f7; border-radius: 8px; }
+        
+        h3.titulo-partido { font-size: 1em; color: #2d3748; margin-top: 0; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #cbd5e0; }
+        
+        .controles-marcador { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+        input[type="number"] { width: 60px; padding: 8px; border: 2px solid #cbd5e0; border-radius: 6px; text-align: center; font-weight: bold; }
+        button { padding: 8px 20px; background-color: #2b6cb0; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:focus, button:hover { background-color: #2c5282; outline: 3px solid #63b3ed;}
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; border: 1px solid rgba(0,0,0,0.1); text-align: center; }
+        th { background-color: rgba(0,0,0,0.05); }
+        
+        .eliminacion-seccion { background: #ffffff; padding: 25px; border-radius: 12px; margin-top: 20px; outline: none; border: 1px solid #cbd5e0; }
+        .llave-card { padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0; color: #1a202c; }
+
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    </style>
+</head>
+<body>
+    <h1>Sigue El mundial FIFA 2026</h1>
+    <p class="creditos">Calendario realizado por George Hernández</p>
+    
+    <nav class="nav-links">
+        <a href="#contenedor-fase-grupos">Explorar Fase de Grupos</a>
+        <a href="#seccion-eliminacion">Ver Fase de Eliminatorias</a>
+    </nav>
+
+    <div id="estado-global" class="sr-only" aria-live="assertive"></div>
+
+    <details id="contenedor-fase-grupos" open>
+        <summary>Fase de Grupos</summary>
+        <div id="contenedor-mundial"></div>
+    </details>
+
+    <div class="eliminacion-seccion" id="seccion-eliminacion" tabindex="-1">
+        <div id="notificaciones-eliminatoria" class="sr-only" aria-live="polite"></div>
+        <div id="bracket-visual"></div>
+    </div>
+
+    <script>
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function reproducirSonido(tipo) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                if (tipo === 'confirmar') {
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.start(); 
+                    osc.stop(audioCtx.currentTime + 0.1);
+                } else if (tipo === 'faseCompleta') {
+                    const notas = [440, 554, 659, 880];
+                    notas.forEach((f, i) => {
+                        osc.frequency.setValueAtTime(f, audioCtx.currentTime + (i * 0.1));
+                    });
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.start(); 
+                    osc.stop(audioCtx.currentTime + 0.5);
+                }
+            } catch (e) {
+                console.error("Error al reproducir audio:", e);
+            }
+        }
+
+        const dataEquipos = {
+            'A': [{n:'México',b:'🇲🇽',c:'rgba(0,104,71,0.2)'},{n:'Sudáfrica',b:'🇿🇦',c:'rgba(255,184,28,0.2)'},{n:'Corea del Sur',b:'🇰🇷',c:'rgba(198,12,48,0.2)'},{n:'República Checa',b:'🇨🇿',c:'rgba(17,69,126,0.2)'}],
+            'B': [{n:'Canadá',b:'🇨🇦',c:'rgba(255,0,0,0.2)'},{n:'Bosnia y Herzegovina',b:'🇧🇦',c:'rgba(0,43,127,0.2)'},{n:'Catar',b:'🇶🇦',c:'rgba(138,21,56,0.2)'},{n:'Suiza',b:'🇨🇭',c:'rgba(213,43,30,0.2)'}],
+            'C': [{n:'Estados Unidos',b:'🇺🇸',c:'rgba(10,49,97,0.2)'},{n:'Paraguay',b:'🇵🇾',c:'rgba(213,43,30,0.2)'},{n:'Australia',b:'🇦🇺',c:'rgba(0,0,139,0.2)'},{n:'Turquía',b:'🇹🇷',c:'rgba(227,10,23,0.2)'}],
+            'D': [{n:'Brasil',b:'🇧🇷',c:'rgba(0,156,59,0.2)'},{n:'Marruecos',b:'🇲🇦',c:'rgba(193,39,45,0.2)'},{n:'Haití',b:'🇭🇹',c:'rgba(0,32,159,0.2)'},{n:'Escocia',b:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',c:'rgba(0,101,189,0.2)'}],
+            'E': [{n:'Alemania',b:'🇩🇪',c:'rgba(0,0,0,0.2)'},{n:'Curazao',b:'🇨🇼',c:'rgba(0,43,127,0.2)'},{n:'Costa de Marfil',b:'🇨🇮',c:'rgba(247,127,0,0.2)'},{n:'Ecuador',b:'🇪🇨',c:'rgba(255,209,0,0.2)'}],
+            'F': [{n:'Países Bajos',b:'🇳🇱',c:'rgba(255,79,0,0.2)'},{n:'Japón',b:'🇯🇵',c:'rgba(188,0,45,0.2)'},{n:'Suecia',b:'🇸🇪',c:'rgba(254,204,0,0.2)'},{n:'Túnez',b:'🇹🇳',c:'rgba(231,0,19,0.2)'}],
+            'G': [{n:'España',b:'🇪🇸',c:'rgba(173,21,25,0.2)'},{n:'Cabo Verde',b:'🇨🇻',c:'rgba(0,56,147,0.2)'},{n:'Arabia Saudita',b:'🇸🇦',c:'rgba(0,108,53,0.2)'},{n:'Uruguay',b:'🇺🇾',c:'rgba(0,129,198,0.2)'}],
+            'H': [{n:'Bélgica',b:'🇧🇪',c:'rgba(227,34,25,0.2)'},{n:'Egipto',b:'🇪🇬',c:'rgba(206,17,38,0.2)'},{n:'Irán',b:'🇮🇷',c:'rgba(35,159,64,0.2)'},{n:'Nueva Zelanda',b:'🇳🇿',c:'rgba(0,0,0,0.2)'}],
+            'I': [{n:'Francia',b:'🇫🇷',c:'rgba(0,38,84,0.2)'},{n:'Senegal',b:'🇸🇳',c:'rgba(0,133,63,0.2)'},{n:'Irak',b:'🇮🇶',c:'rgba(206,17,38,0.2)'},{n:'Noruega',b:'🇳🇴',c:'rgba(186,12,47,0.2)'}],
+            'J': [{n:'Argentina',b:'🇦🇷',c:'rgba(116,172,223,0.2)'},{n:'Argelia',b:'🇩🇿',c:'rgba(0,98,51,0.2)'},{n:'Austria',b:'🇦🇹',c:'rgba(237,41,57,0.2)'},{n:'Jordania',b:'🇯🇴',c:'rgba(206,17,38,0.2)'}],
+            'K': [{n:'Portugal',b:'🇵🇹',c:'rgba(255,0,0,0.2)'},{n:'RD Congo',b:'🇨🇩',c:'rgba(0,127,255,0.2)'},{n:'Uzbekistán',b:'🇺🇿',c:'rgba(0,153,181,0.2)'},{n:'Colombia',b:'🇨🇴',c:'rgba(252,209,22,0.2)'}],
+            'L': [{n:'Inglaterra',b:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',c:'rgba(206,17,38,0.2)'},{n:'Croacia',b:'🇭🇷',c:'rgba(255,0,0,0.2)'},{n:'Ghana',b:'🇬🇭',c:'rgba(206,17,38,0.2)'},{n:'Panamá',b:'🇵🇦',c:'rgba(190,15,52,0.2)'}]
+        };
+
+        const rawPartidos = [
+            ['A',1,'México','Sudáfrica','11 Jun','1 pm','Ciudad de México'],['A',1,'Corea del Sur','República Checa','11 Jun','8 pm','Guadalajara'],
+            ['A',2,'República Checa','Sudáfrica','18 Jun','10 am','Atlanta'],['A',2,'México','Corea del Sur','18 Jun','7 pm','Guadalajara'],
+            ['A',3,'República Checa','México','24 Jun','7 pm','Ciudad de México'],['A',3,'Sudáfrica','Corea del Sur','24 Jun','7 pm','Monterrey'],
+            ['B',1,'Canadá','Bosnia y Herzegovina','12 Jun','1 pm','Toronto'],['B',1,'Catar','Suiza','13 Jun','1 pm','San Francisco'],
+            ['B',2,'Suiza','Bosnia y Herzegovina','18 Jun','1 pm','Los Ángeles'],['B',2,'Canadá','Catar','18 Jun','4 pm','Vancouver'],
+            ['B',3,'Suiza','Canadá','24 Jun','1 pm','Vancouver'],['B',3,'Bosnia y Herzegovina','Catar','24 Jun','1 pm','Seattle'],
+            ['C',1,'Estados Unidos','Paraguay','12 Jun','7 pm','Los Ángeles'],['C',1,'Australia','Turquía','13 Jun','10 pm','Vancouver'],
+            ['C',2,'Estados Unidos','Australia','19 Jun','1 pm','Seattle'],['C',2,'Turquía','Paraguay','19 Jun','9 pm','San Francisco'],
+            ['C',3,'Turquía','Estados Unidos','25 Jun','8 pm','Los Ángeles'],['C',3,'Paraguay','Australia','25 Jun','8 pm','San Francisco'],
+            ['D',1,'Brasil','Marruecos','13 Jun','3 pm','Nueva York / NJ'],['D',1,'Haití','Escocia','13 Jun','6 pm','Boston'],
+            ['D',2,'Escocia','Marruecos','19 Jun','4 pm','Boston'],['D',2,'Brasil','Haití','19 Jun','6:30 pm','Filadelfia'],
+            ['D',3,'Escocia','Brasil','24 Jun','4 pm','Miami'],['D',3,'Marruecos','Haití','24 Jun','4 pm','Atlanta'],
+            ['E',1,'Alemania','Curazao','14 Jun','11 am','Houston'],['E',1,'Costa de Marfil','Ecuador','14 Jun','5 pm','Filadelfia'],
+            ['E',2,'Alemania','Costa de Marfil','20 Jun','2 pm','Toronto'],['E',2,'Ecuador','Curazao','20 Jun','6 pm','Kansas City'],
+            ['E',3,'Curazao','Costa de Marfil','25 Jun','2 pm','Filadelfia'],['E',3,'Ecuador','Alemania','25 Jun','2 pm','Nueva York / NJ'],
+            ['F',1,'Países Bajos','Japón','14 Jun','2 pm','Dallas'],['F',1,'Suecia','Túnez','14 Jun','8 pm','Monterrey'],
+            ['F',2,'Países Bajos','Suecia','20 Jun','11 am','Houston'],['F',2,'Túnez','Japón','20 Jun','10 pm','Monterrey'],
+            ['F',3,'Japón','Suecia','25 Jun','5 pm','Dallas'],['F',3,'Túnez','Países Bajos','25 Jun','5 pm','Kansas City'],
+            ['G',1,'España','Cabo Verde','15 Jun','10 am','Atlanta'],['G',1,'Arabia Saudita','Uruguay','15 Jun','4 pm','Miami'],
+            ['G',2,'España','Arabia Saudita','21 Jun','10 am','Atlanta'],['G',2,'Uruguay','Cabo Verde','21 Jun','4 pm','Miami'],
+            ['G',3,'Cabo Verde','Arabia Saudita','26 Jun','6 pm','Houston'],['G',3,'Uruguay','España','26 Jun','6 pm','Guadalajara'],
+            ['H',1,'Bélgica','Egipto','15 Jun','1 pm','Seattle'],['H',1,'Irán','Nueva Zelanda','15 Jun','7 pm','Los Ángeles'],
+            ['H',2,'Bélgica','Irán','21 Jun','1 pm','Los Ángeles'],['H',2,'Nueva Zelanda','Egipto','21 Jun','7 pm','Vancouver'],
+            ['H',3,'Egipto','Irán','26 Jun','9 pm','Seattle'],['H',3,'Nueva Zelanda','Bélgica','26 Jun','9 pm','Vancouver'],
+            ['I',1,'Francia','Senegal','16 Jun','1 pm','Nueva York / NJ'],['I',1,'Irak','Noruega','16 Jun','4 pm','Boston'],
+            ['I',2,'Francia','Irak','22 Jun','3 pm','Filadelfia'],['I',2,'Noruega','Senegal','22 Jun','6 pm','Nueva York / NJ'],
+            ['I',3,'Noruega','Francia','26 Jun','1 pm','Boston'],['I',3,'Senegal','Irak','26 Jun','1 pm','Toronto'],
+            ['J',1,'Argentina','Argelia','16 Jun','7 pm','Kansas City'],['J',1,'Austria','Jordania','16 Jun','10 pm','San Francisco'],
+            ['J',2,'Argentina','Austria','22 Jun','11 am','Dallas'],['J',2,'Jordania','Argelia','22 Jun','9 pm','San Francisco'],
+            ['J',3,'Argelia','Austria','27 Jun','8 pm','Kansas City'],['J',3,'Jordania','Argentina','27 Jun','8 pm','Dallas'],
+            ['K',1,'Portugal','RD Congo','17 Jun','11 am','Houston'],['K',1,'Uzbekistán','Colombia','17 Jun','8 pm','Ciudad de México'],
+            ['K',2,'Portugal','Uzbekistán','23 Jun','11 am','Houston'],['K',2,'Colombia','RD Congo','23 Jun','8 pm','Guadalajara'],
+            ['K',3,'Colombia','Portugal','27 Jun','5:30 pm','Miami'],['K',3,'RD Congo','Uzbekistán','27 Jun','5:30 pm','Atlanta'],
+            ['L',1,'Inglaterra','Croacia','17 Jun','2 pm','Dallas'],['L',1,'Ghana','Panamá','17 Jun','5 pm','Toronto'],
+            ['L',2,'Inglaterra','Ghana','23 Jun','2 pm','Boston'],['L',2,'Panamá','Croacia','23 Jun','5 pm','Toronto'],
+            ['L',3,'Panamá','Inglaterra','27 Jun','3 pm','Nueva York / NJ'],['L',3,'Croacia','Ghana','27 Jun','3 pm','Filadelfia']
+        ];
+
+        const partidos = rawPartidos.map((p, i) => ({ id: 'p'+(i+1), g: p[0], j: p[1], e1: p[2], e2: p[3], f: p[4], h: p[5], s: p[6] }));
+
+        const llavesEliminacion = [
+            { r: 'Dieciseisavos de Final', id: 'D1', f: '28 Jun', h: '1 pm', s: 'Los Ángeles', eq1: 'Primero Grupo A', eq2: 'Tercero Grupo C/D/E' },
+            { r: 'Dieciseisavos de Final', id: 'D2', f: '28 Jun', h: '5 pm', s: 'Seattle', eq1: 'Segundo Grupo A', eq2: 'Segundo Grupo B' },
+            { r: 'Dieciseisavos de Final', id: 'D3', f: '29 Jun', h: '1 pm', s: 'Boston', eq1: 'Primero Grupo E', eq2: 'Tercero Grupo A/B/C/D' },
+            { r: 'Dieciseisavos de Final', id: 'D4', f: '29 Jun', h: '5 pm', s: 'Monterrey', eq1: 'Primero Grupo F', eq2: 'Segundo Grupo C' },
+            { r: 'Dieciseisavos de Final', id: 'D5', f: '29 Jun', h: '8 pm', s: 'Houston', eq1: 'Primero Grupo C', eq2: 'Segundo Grupo F' },
+            { r: 'Dieciseisavos de Final', id: 'D6', f: '30 Jun', h: '1 pm', s: 'Nueva York / NJ', eq1: 'Primero Grupo I', eq2: 'Tercero Grupo C/D/F/G' },
+            { r: 'Dieciseisavos de Final', id: 'D7', f: '30 Jun', h: '4 pm', s: 'Dallas', eq1: 'Segundo Grupo E', eq2: 'Segundo Grupo I' },
+            { r: 'Dieciseisavos de Final', id: 'D8', f: '30 Jun', h: '7 pm', s: 'Ciudad de México', eq1: 'Primero Grupo K', eq2: 'Tercero Grupo D/E/I/J' },
+            { r: 'Dieciseisavos de Final', id: 'D9', f: '1 Jul', h: '1 pm', s: 'Atlanta', eq1: 'Primero Grupo L', eq2: 'Tercero Grupo E/H/I/J' },
+            { r: 'Dieciseisavos de Final', id: 'D10', f: '1 Jul', h: '4 pm', s: 'San Francisco', eq1: 'Primero Grupo D', eq2: 'Tercero Grupo B/E/F/I/J' },
+            { r: 'Dieciseisavos de Final', id: 'D11', f: '1 Jul', h: '7 pm', s: 'Seattle', eq1: 'Primero Grupo G', eq2: 'Tercero Grupo A/E/H/I/J' },
+            { r: 'Dieciseisavos de Final', id: 'D12', f: '2 Jul', h: '1 pm', s: 'Toronto', eq1: 'Segundo Grupo G', eq2: 'Segundo Grupo J' },
+            { r: 'Dieciseisavos de Final', id: 'D13', f: '2 Jul', h: '4 pm', s: 'Los Ángeles', eq1: 'Primero Grupo B', eq2: 'Tercero Grupo E/F/G/I' },
+            { r: 'Dieciseisavos de Final', id: 'D14', f: '2 Jul', h: '7 pm', s: 'Vancouver', eq1: 'Primero Grupo H', eq2: 'Segundo Grupo J' },
+            { r: 'Dieciseisavos de Final', id: 'D15', f: '3 Jul', h: '1 pm', s: 'Miami', eq1: 'Primero Grupo J', eq2: 'Segundo Grupo H' },
+            { r: 'Dieciseisavos de Final', id: 'D16', f: '3 Jul', h: '4 pm', s: 'Kansas City', eq1: 'Segundo Grupo D', eq2: 'Segundo Grupo K' },
+
+            { r: 'Octavos de Final', id: 'O1', f: '4 Jul', h: '1 pm', s: 'Filadelfia', eq1: 'Ganador D1', eq2: 'Ganador D2' },
+            { r: 'Octavos de Final', id: 'O2', f: '4 Jul', h: '5 pm', s: 'Houston', eq1: 'Ganador D3', eq2: 'Ganador D4' },
+            { r: 'Octavos de Final', id: 'O3', f: '5 Jul', h: '1 pm', s: 'Nueva York / NJ', eq1: 'Ganador D5', eq2: 'Ganador D6' },
+            { r: 'Octavos de Final', id: 'O4', f: '5 Jul', h: '5 pm', s: 'Ciudad de México', eq1: 'Ganador D7', eq2: 'Ganador D8' },
+            { r: 'Octavos de Final', id: 'O5', f: '6 Jul', h: '1 pm', s: 'Dallas', eq1: 'Ganador D9', eq2: 'Ganador D10' },
+            { r: 'Octavos de Final', id: 'O6', f: '6 Jul', h: '5 pm', s: 'Seattle', eq1: 'Ganador D11', eq2: 'Ganador D12' },
+            { r: 'Octavos de Final', id: 'O7', f: '7 Jul', h: '1 pm', s: 'Atlanta', eq1: 'Ganador D13', eq2: 'Ganador D14' },
+            { r: 'Octavos de Final', id: 'O8', f: '7 Jul', h: '5 pm', s: 'Vancouver', eq1: 'Ganador D15', eq2: 'Ganador D16' },
+
+            { r: 'Cuartos de Final', id: 'C1', f: '9 Jul', h: '1 pm', s: 'Boston', eq1: 'Ganador O1', eq2: 'Ganador O2' },
+            { r: 'Cuartos de Final', id: 'C2', f: '9 Jul', h: '5 pm', s: 'Los Ángeles', eq1: 'Ganador O3', eq2: 'Ganador O4' },
+            { r: 'Cuartos de Final', id: 'C3', f: '10 Jul', h: '1 pm', s: 'Kansas City', eq1: 'Ganador O5', eq2: 'Ganador O6' },
+            { r: 'Cuartos de Final', id: 'C4', f: '10 Jul', h: '5 pm', s: 'Miami', eq1: 'Ganador O7', eq2: 'Ganador O8' },
+
+            { r: 'Semifinales', id: 'S1', f: '14 Jul', h: '4 pm', s: 'Dallas', eq1: 'Ganador C1', eq2: 'Ganador C2' },
+            { r: 'Semifinales', id: 'S2', f: '15 Jul', h: '4 pm', s: 'Atlanta', eq1: 'Ganador C3', eq2: 'Ganador C4' },
+
+            { r: 'Tercer Lugar', id: 'T1', f: '18 Jul', h: '4 pm', s: 'Miami', eq1: 'Perdedor S1', eq2: 'Perdedor S2' },
+            { r: 'Final', id: 'F1', f: '19 Jul', h: '4 pm', s: 'Nueva York / NJ', eq1: 'Ganador S1', eq2: 'Ganador S2' }
+        ];
+
+        let stats = {};
+
+        function inicializar() {
+            Object.keys(dataEquipos).forEach(g => {
+                stats[g] = dataEquipos[g].map(e => ({ ...e, pj:0, pts:0, dg:0 }));
+            });
+            renderizarGrupos();
+            cargarDatosGuardados();
+            Object.keys(dataEquipos).forEach(g => actualizar(g, false, true));
+            actualizarBracket();
+        }
+
+        function renderizarGrupos() {
+            const container = document.getElementById('contenedor-mundial');
+            container.innerHTML = '';
+            Object.keys(dataEquipos).forEach(idGrupo => {
+                const gDiv = document.createElement('div');
+                gDiv.className = 'grupo-container';
+                gDiv.id = `cont-${idGrupo}`;
+                
+                // Grupo es H2 (tecla 2)
+                let html = `<h2>Grupo ${idGrupo}</h2>`;
+                
+                [1, 2, 3].forEach(numJornada => {
+                    const partidosJornada = partidos.filter(p => p.g === idGrupo && p.j === numJornada);
+                    partidosJornada.forEach(p => {
+                        // Partido es H3 (tecla 3)
+                        html += `<div class="partido-card">
+                            <h3 class="titulo-partido">Jornada ${numJornada}: ${p.e1} vs ${p.e2}. ${p.f}, ${p.h}, Estadio ${p.s}</h3>
+                            <div class="controles-marcador">
+                                <label for="in_${p.id}_1">${p.e1}</label>
+                                <input type="number" id="in_${p.id}_1">
+                                <span aria-hidden="true">vs</span>
+                                <input type="number" id="in_${p.id}_2">
+                                <label for="in_${p.id}_2">${p.e2}</label>
+                                <button onclick="actualizarGrupo('${idGrupo}')">Confirmar</button>
+                            </div>
+                        </div>`;
+                    });
+                });
+                html += `<div id="narracion-${idGrupo}" class="sr-only" aria-live="polite"></div>
+                         <table aria-hidden="true">
+                            <tbody id="body-${idGrupo}"></tbody>
+                         </table>`;
+                gDiv.innerHTML = html;
+                container.appendChild(gDiv);
+            });
+        }
+
+        window.actualizarGrupo = function(gId) {
+            initAudio(); 
+            actualizar(gId, true, false);
+        };
+
+        function actualizar(gId, guardar = false, esCargaInicial = false) {
+            const grupoStats = stats[gId];
+            grupoStats.forEach(e => { e.pj=0; e.pts=0; e.dg=0; });
+
+            partidos.filter(p => p.g === gId).forEach(p => {
+                const val1 = document.getElementById(`in_${p.id}_1`).value;
+                const val2 = document.getElementById(`in_${p.id}_2`).value;
+                if (val1 !== "" && val2 !== "") {
+                    const g1 = parseInt(val1); const g2 = parseInt(val2);
+                    const e1 = grupoStats.find(x => x.n === p.e1); const e2 = grupoStats.find(x => x.n === p.e2);
+                    if(e1 && e2) {
+                        e1.pj++; e2.pj++; e1.dg += (g1-g2); e2.dg += (g2-g1);
+                        if (g1 > g2) e1.pts += 3; else if (g2 > g1) e2.pts += 3; else { e1.pts += 1; e2.pts += 1; }
+                    }
+                }
+            });
+
+            grupoStats.sort((a,b) => b.pts - a.pts || b.dg - a.dg);
+            const container = document.getElementById(`cont-${gId}`);
+            if (grupoStats[0].pj > 0) container.style.backgroundColor = grupoStats[0].c;
+
+            const narracion = document.getElementById(`narracion-${gId}`);
+            let texto = `<h3>Posiciones Grupo ${gId}</h3><ul>`;
+            grupoStats.forEach((e, i) => {
+                texto += `<li>Posición ${i+1}: ${e.n}. Puntos: ${e.pts}.</li>`;
+            });
+            texto += "</ul>";
+            narracion.innerHTML = texto;
+
+            if (guardar) { guardarDatosLocales(); reproducirSonido('confirmar'); }
+            if (!esCargaInicial) { actualizarBracket(); }
+        }
+
+        function actualizarBracket() {
+            const mapClasificados = {};
+            
+            // Llenar clasificados de la Fase de Grupos
+            Object.keys(dataEquipos).forEach(g => {
+                const jugados = partidos.filter(p => p.g === g && document.getElementById(`in_${p.id}_1`).value !== "").length;
+                if (jugados >= 1) { 
+                    mapClasificados[`Primero Grupo ${g}`] = stats[g][0];
+                    mapClasificados[`Segundo Grupo ${g}`] = stats[g][1];
+                }
+            });
+
+            // Evaluar ganadores de las llaves de Eliminatoria
+            llavesEliminacion.forEach(llave => {
+                const in1 = document.getElementById(`in_${llave.id}_1`);
+                const in2 = document.getElementById(`in_${llave.id}_2`);
+                if (in1 && in2 && in1.value !== "" && in2.value !== "") {
+                    const g1 = parseInt(in1.value);
+                    const g2 = parseInt(in2.value);
+                    let e1 = mapClasificados[llave.eq1] || { n: llave.eq1, b: '', c: 'rgba(200,200,200,0.2)' };
+                    let e2 = mapClasificados[llave.eq2] || { n: llave.eq2, b: '', c: 'rgba(200,200,200,0.2)' };
+                    
+                    if (g1 > g2) {
+                        mapClasificados[`Ganador ${llave.id}`] = e1;
+                        mapClasificados[`Perdedor ${llave.id}`] = e2;
+                    } else if (g2 > g1) {
+                        mapClasificados[`Ganador ${llave.id}`] = e2;
+                        mapClasificados[`Perdedor ${llave.id}`] = e1;
+                    } else {
+                        mapClasificados[`Ganador ${llave.id}`] = { n: `Ganador (Penales)`, b: '', c: 'rgba(200,200,200,0.2)' };
+                    }
+                }
+            });
+
+            const visual = document.getElementById('bracket-visual');
+            const notificaciones = document.getElementById('notificaciones-eliminatoria');
+            let html = ""; 
+            let rondaActual = "";
+
+            llavesEliminacion.forEach(llave => {
+                // AQUÍ: La Fase (Octavos, Cuartos) es H2 (Tecla 2)
+                if (llave.r !== rondaActual) {
+                    html += `<h2>${llave.r}</h2>`;
+                    rondaActual = llave.r;
+                }
+                
+                let e1 = mapClasificados[llave.eq1] || { n: llave.eq1, b: '', c: 'rgba(200,200,200,0.2)' };
+                let e2 = mapClasificados[llave.eq2] || { n: llave.eq2, b: '', c: 'rgba(200,200,200,0.2)' };
+
+                const val1 = document.getElementById(`in_${llave.id}_1`) ? document.getElementById(`in_${llave.id}_1`).value : '';
+                const val2 = document.getElementById(`in_${llave.id}_2`) ? document.getElementById(`in_${llave.id}_2`).value : '';
+
+                // AQUÍ: El Partido es H3 (Tecla 3) igual que en los Grupos
+                html += `<div class="partido-card llave-card" style="background: linear-gradient(90deg, ${e1.c}, #fff, ${e2.c});">
+                    <h3 class="titulo-partido">Jornada de ${llave.r}: ${e1.n} vs ${e2.n}. ${llave.f}, ${llave.h}, Estadio ${llave.s}</h3>
+                    <div class="controles-marcador">
+                        <label for="in_${llave.id}_1"><span aria-hidden="true">${e1.b}</span> ${e1.n}</label>
+                        <input type="number" id="in_${llave.id}_1" value="${val1}">
+                        <span aria-hidden="true">vs</span>
+                        <input type="number" id="in_${llave.id}_2" value="${val2}">
+                        <label for="in_${llave.id}_2">${e2.n} <span aria-hidden="true">${e2.b}</span></label>
+                        <button id="btn_${llave.id}" onclick="procesarLlave('${llave.id}')">Confirmar</button>
+                    </div>
+                </div>`;
+            });
+            
+            visual.innerHTML = html;
+            if (notificaciones) notificaciones.innerText = "Cuadro de eliminatorias actualizado.";
+        }
+
+        window.procesarLlave = function(id) {
+            initAudio(); 
+            reproducirSonido('confirmar');
+            guardarDatosLocales();
+            actualizarBracket();
+            const btn = document.getElementById('btn_' + id);
+            if (btn) btn.focus();
+        };
+
+        function guardarDatosLocales() {
+            const inputs = document.querySelectorAll('input[type="number"]');
+            const datos = {};
+            inputs.forEach(i => { if(i.value!=="") datos[i.id] = i.value; });
+            localStorage.setItem('mundial2026_george', JSON.stringify(datos));
+        }
+
+        function cargarDatosGuardados() {
+            const guardado = localStorage.getItem('mundial2026_george');
+            if (guardado) {
+                const datos = JSON.parse(guardado);
+                for (const id in datos) { if(document.getElementById(id)) document.getElementById(id).value = datos[id]; }
+            }
+        }
+        
+        window.onload = inicializar;
+    </script>
+</body>
+</html>
