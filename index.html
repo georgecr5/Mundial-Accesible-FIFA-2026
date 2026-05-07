@@ -123,6 +123,27 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
+        .calendario-acciones {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-cal {
+            background-color: #fff;
+            color: #004d98;
+            border: 1px solid #004d98;
+            padding: 8px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-cal:hover, .btn-cal:focus {
+            background-color: #004d98;
+            color: white;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -148,7 +169,6 @@
             clip: rect(0, 0, 0, 0);
             border: 0;
         }
-        /* Lista sin viñetas para el lector de pantalla en las tablas */
         ul.sr-only {
             list-style-type: none;
         }
@@ -297,7 +317,62 @@
             };
         }
 
-        // Manejador para salir del campo con Escape o Enter
+        // --- SISTEMA DE FECHAS Y CALENDARIOS ---
+        function obtenerFechasISO(fechaStr, horaStr) {
+            const meses = {"junio": "06", "julio": "07"};
+            let partesFecha = fechaStr.toLowerCase().split(" ");
+            let dia = partesFecha[1].padStart(2, '0');
+            let mes = meses[partesFecha[3]] || "06";
+
+            let horas = 12; // Valor por defecto
+            let mins = 0;
+            if (horaStr && !horaStr.toLowerCase().includes('confirmar')) {
+                let limpia = horaStr.toLowerCase().replace('.', '').trim();
+                let esPM = limpia.includes('pm');
+                let tiempo = limpia.replace('am','').replace('pm','').trim().split(':');
+                horas = parseInt(tiempo[0]);
+                mins = parseInt(tiempo[1]) || 0;
+                if (esPM && horas !== 12) horas += 12;
+                if (!esPM && horas === 12) horas = 0;
+            }
+
+            let dInicio = new Date(2026, parseInt(mes) - 1, parseInt(dia), horas, mins);
+            let dFin = new Date(dInicio.getTime() + (2 * 60 * 60 * 1000)); // +2 horas duración
+
+            const formatStr = (d) => {
+                return d.getFullYear().toString() +
+                       (d.getMonth() + 1).toString().padStart(2, '0') +
+                       d.getDate().toString().padStart(2, '0') + "T" +
+                       d.getHours().toString().padStart(2, '0') +
+                       d.getMinutes().toString().padStart(2, '0') + "00";
+            };
+
+            return { start: formatStr(dInicio), end: formatStr(dFin) };
+        }
+
+        function generarUrlGoogle(titulo, detalles, ubi, start, end) {
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${start}/${end}&details=${encodeURIComponent(detalles)}&location=${encodeURIComponent(ubi)}`;
+        }
+
+        function descargarICS(titulo, detalles, ubi, start, end, eq1, eq2) {
+            let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\n" +
+                "DTSTART:" + start + "\n" +
+                "DTEND:" + end + "\n" +
+                "SUMMARY:" + titulo + "\n" +
+                "DESCRIPTION:" + detalles + "\n" +
+                "LOCATION:" + ubi + "\n" +
+                "END:VEVENT\nEND:VCALENDAR";
+            
+            let blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Mundial2026_${eq1.replace(/\s+/g,'_')}_vs_${eq2.replace(/\s+/g,'_')}.ics`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        // --------------------------------------
+
         function manejarTeclas(e) {
             if (e.key === 'Enter' || e.key === 'Escape') {
                 e.target.blur();
@@ -312,7 +387,6 @@
                 resultadosEliminatorias = {};
                 renderizarGrupos();
                 
-                // Limpiar inputs de eliminatorias sin destruir la estructura
                 fasesEliminatorias.forEach(fase => {
                     fase.partidos.forEach(partido => {
                         const in1 = document.getElementById(`goles1_${partido.id}`);
@@ -346,6 +420,12 @@
                     let val1 = partido.goles1 !== null ? partido.goles1 : "";
                     let val2 = partido.goles2 !== null ? partido.goles2 : "";
 
+                    // Fechas para calendarios
+                    const fechas = obtenerFechasISO(partido.fecha, partido.hora);
+                    const tituloEvt = `FIFA 2026: ${nombreEq1} vs ${nombreEq2}`;
+                    const detallesEvt = `Partido Fase de Grupos. Sede: ${partido.sede}`;
+                    const urlGcal = generarUrlGoogle(tituloEvt, detallesEvt, partido.sede, fechas.start, fechas.end);
+
                     divGrupo.innerHTML += `
                         <div class="partido">
                             <h3 id="partido-${partido.id}">Jornada #${partido.jornada} ${nombreEq1} - ${nombreEq2}</h3>
@@ -353,6 +433,11 @@
                             <p><strong>Hora:</strong> ${partido.hora}</p>
                             <p><strong>Sede:</strong> ${partido.sede}</p>
                             
+                            <div class="calendario-acciones">
+                                <a href="${urlGcal}" target="_blank" class="btn-cal" aria-label="Añadir a Google Calendar: ${nombreEq1} contra ${nombreEq2}">📅 Añadir a Google</a>
+                                <button class="btn-cal" onclick="descargarICS('${tituloEvt}', '${detallesEvt}', '${partido.sede}', '${fechas.start}', '${fechas.end}', '${nombreEq1}', '${nombreEq2}')" aria-label="Descargar para Apple o Outlook: ${nombreEq1} contra ${nombreEq2}">📅 Apple/Otros (.ics)</button>
+                            </div>
+
                             <div class="resultado-inputs">
                                 <div>
                                     <label for="goles1_${partido.id}">Goles de ${nombreEq1}:</label>
@@ -486,7 +571,6 @@
             const contenedorTabla = document.getElementById(`tabla-posiciones-${letraGrupo}`);
             if(!contenedorTabla) return;
             
-            // 1. Tabla visual pero oculta para el lector (aria-hidden)
             let html = `
                 <div aria-hidden="true">
                     <table>
@@ -521,7 +605,6 @@
             });
             html += `</tbody></table></div>`;
 
-            // 2. Lista optimizada SOLO para el lector de pantalla (sr-only)
             html += `<ul class="sr-only" aria-label="Posiciones del Grupo ${letraGrupo}">`;
             datosEstadisticos.forEach((st, index) => {
                 html += `<li>Lugar ${index + 1}. ${st.nombre}: ${st.pts} puntos. ${st.pj} partidos jugados. ${st.pg} ganados, ${st.pe} empatados, ${st.pp} perdidos. ${st.gf} goles a favor y ${st.gc} en contra.</li>`;
@@ -557,7 +640,6 @@
             return null;
         }
 
-        // Esta función construye la estructura DOM de eliminatorias solo UNA vez al inicio
         function construirEstructuraEliminatorias() {
             const contenedor = document.getElementById('contenedor-eliminatorias');
             if(!contenedor) return;
@@ -576,6 +658,11 @@
                             <p><strong>Hora:</strong> ${partido.hora}</p>
                             <p><strong>Sede:</strong> ${partido.sede}</p>
                             
+                            <div class="calendario-acciones">
+                                <a id="gcal_${partido.id}" href="#" target="_blank" class="btn-cal">📅 Añadir a Google</a>
+                                <button id="ics_${partido.id}" class="btn-cal">📅 Apple/Otros (.ics)</button>
+                            </div>
+
                             <div class="resultado-inputs">
                                 <div>
                                     <label id="label-goles1-${partido.id}" for="goles1_${partido.id}">...</label>
@@ -593,7 +680,6 @@
             });
         }
 
-        // Esta función actualiza solo los textos y colores, sin destruir los inputs (protege el foco del lector)
         function actualizarVistaEliminatorias() {
             fasesEliminatorias.forEach(faseObj => {
                 faseObj.partidos.forEach(partido => {
@@ -609,8 +695,10 @@
                     let nombreEq1 = eq1Data ? eq1Data.nombre : (partido.ref1.startsWith('E') ? `Ganador ${partido.ref1}` : (partido.ref1.startsWith('Perdedor') ? partido.ref1 : `1° Grupo ${partido.ref1.charAt(1) || ''}`));
                     let nombreEq2 = eq2Data ? eq2Data.nombre : (partido.ref2.startsWith('E') ? `Ganador ${partido.ref2}` : (partido.ref2.startsWith('Perdedor') ? partido.ref2 : partido.ref2));
 
+                    const tituloStr = `${partido.esFinal ? '🌟 LA GRAN FINAL' : (partido.esTercerLugar ? '🥉 3er Lugar' : 'Partido ' + partido.id)}: ${nombreEq1} vs ${nombreEq2}`;
+                    
                     const tituloEl = document.getElementById(`titulo-partido-${partido.id}`);
-                    if(tituloEl) tituloEl.innerText = `${partido.esFinal ? '🌟 LA GRAN FINAL' : (partido.esTercerLugar ? '🥉 3er Lugar' : 'Partido ' + partido.id)}: ${nombreEq1} vs ${nombreEq2}`;
+                    if(tituloEl) tituloEl.innerText = tituloStr;
 
                     const label1 = document.getElementById(`label-goles1-${partido.id}`);
                     if(label1) label1.innerText = `Goles de ${nombreEq1}:`;
@@ -621,6 +709,22 @@
                     let bgColorPartido = eq1Data && coloresEquipos[eq1Data.id] ? `rgba(${coloresEquipos[eq1Data.id]}, 0.15)` : 'rgba(255, 255, 255, 0.8)';
                     const cajaEl = document.getElementById(`caja-partido-${partido.id}`);
                     if(cajaEl) cajaEl.style.backgroundColor = bgColorPartido;
+
+                    // Actualizar Botones de Calendario Dinámicamente
+                    const btnGcal = document.getElementById(`gcal_${partido.id}`);
+                    const btnIcs = document.getElementById(`ics_${partido.id}`);
+                    
+                    if (btnGcal && btnIcs) {
+                        const fechas = obtenerFechasISO(partido.fecha, partido.hora);
+                        const tituloEvt = `FIFA 2026: ${nombreEq1} vs ${nombreEq2}`;
+                        const detallesEvt = `Partido de ${faseObj.fase}. Sede: ${partido.sede}`;
+                        
+                        btnGcal.href = generarUrlGoogle(tituloEvt, detallesEvt, partido.sede, fechas.start, fechas.end);
+                        btnGcal.setAttribute("aria-label", `Añadir a Google Calendar: ${nombreEq1} contra ${nombreEq2}`);
+                        
+                        btnIcs.onclick = () => descargarICS(tituloEvt, detallesEvt, partido.sede, fechas.start, fechas.end, nombreEq1, nombreEq2);
+                        btnIcs.setAttribute("aria-label", `Descargar para Apple o Outlook: ${nombreEq1} contra ${nombreEq2}`);
+                    }
                 });
             });
         }
