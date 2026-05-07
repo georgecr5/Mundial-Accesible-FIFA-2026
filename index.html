@@ -112,10 +112,21 @@
             gap: 15px;
             align-items: center;
         }
-        .resultado-inputs label {
+        .penales-inputs {
+            margin-top: 5px;
+            background-color: #fff3cd; /* Color amarillo tenue para distinguirlo visualmente */
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            border: 1px dashed #ffeeba;
+        }
+        .resultado-inputs label, .penales-inputs label {
             font-weight: bold;
         }
-        .resultado-inputs input {
+        .resultado-inputs input, .penales-inputs input {
             width: 60px;
             font-size: 1.1em;
             text-align: center;
@@ -201,7 +212,7 @@
 
         <section id="seccion-eliminatorias" aria-labelledby="titulo-fase-eliminatorias" style="display: none;">
             <h1 id="titulo-fase-eliminatorias">Fases de Eliminatorias Directas</h1>
-            <p>Los equipos clasificados se completarán automáticamente. Usa los enlaces para navegar rápidamente.</p>
+            <p>Los equipos clasificados se completarán automáticamente. En caso de empate, utiliza las casillas de penales para definir al ganador.</p>
             
             <nav aria-label="Saltar a fase eliminatoria" class="sub-nav">
                 <a href="#titulo-fase-DieciseisavosdeFinal">Dieciseisavos de Final</a>
@@ -317,14 +328,13 @@
             };
         }
 
-        // --- SISTEMA DE FECHAS Y CALENDARIOS ---
         function obtenerFechasISO(fechaStr, horaStr) {
             const meses = {"junio": "06", "julio": "07"};
             let partesFecha = fechaStr.toLowerCase().split(" ");
             let dia = partesFecha[1].padStart(2, '0');
             let mes = meses[partesFecha[3]] || "06";
 
-            let horas = 12; // Valor por defecto
+            let horas = 12; 
             let mins = 0;
             if (horaStr && !horaStr.toLowerCase().includes('confirmar')) {
                 let limpia = horaStr.toLowerCase().replace('.', '').trim();
@@ -337,7 +347,7 @@
             }
 
             let dInicio = new Date(2026, parseInt(mes) - 1, parseInt(dia), horas, mins);
-            let dFin = new Date(dInicio.getTime() + (2 * 60 * 60 * 1000)); // +2 horas duración
+            let dFin = new Date(dInicio.getTime() + (2 * 60 * 60 * 1000)); 
 
             const formatStr = (d) => {
                 return d.getFullYear().toString() +
@@ -371,7 +381,6 @@
             a.click();
             window.URL.revokeObjectURL(url);
         }
-        // --------------------------------------
 
         function manejarTeclas(e) {
             if (e.key === 'Enter' || e.key === 'Escape') {
@@ -391,8 +400,12 @@
                     fase.partidos.forEach(partido => {
                         const in1 = document.getElementById(`goles1_${partido.id}`);
                         const in2 = document.getElementById(`goles2_${partido.id}`);
+                        const pen1 = document.getElementById(`penales1_${partido.id}`);
+                        const pen2 = document.getElementById(`penales2_${partido.id}`);
                         if(in1) in1.value = '';
                         if(in2) in2.value = '';
+                        if(pen1) pen1.value = '';
+                        if(pen2) pen2.value = '';
                     });
                 });
                 
@@ -420,7 +433,6 @@
                     let val1 = partido.goles1 !== null ? partido.goles1 : "";
                     let val2 = partido.goles2 !== null ? partido.goles2 : "";
 
-                    // Fechas para calendarios
                     const fechas = obtenerFechasISO(partido.fecha, partido.hora);
                     const tituloEvt = `FIFA 2026: ${nombreEq1} vs ${nombreEq2}`;
                     const detallesEvt = `Partido Fase de Grupos. Sede: ${partido.sede}`;
@@ -470,12 +482,18 @@
             calcularMotorGlobal();
         }
 
-        function actualizarResultadoEliminatoria(idPartido, equipoNum, valor) {
+        // Nuevo motor para eliminatorias que discrimina si es gol normal o penal
+        function actualizarResultadoEliminatoria(idPartido, equipoNum, tipo, valor) {
             if (!resultadosEliminatorias[idPartido]) {
-                resultadosEliminatorias[idPartido] = { goles1: null, goles2: null, eq1: null, eq2: null };
+                resultadosEliminatorias[idPartido] = { goles1: null, goles2: null, penales1: null, penales2: null, eq1: null, eq2: null };
             }
-            if (equipoNum === 1) resultadosEliminatorias[idPartido].goles1 = valor === "" ? null : parseInt(valor);
-            if (equipoNum === 2) resultadosEliminatorias[idPartido].goles2 = valor === "" ? null : parseInt(valor);
+            if (tipo === 'goles') {
+                if (equipoNum === 1) resultadosEliminatorias[idPartido].goles1 = valor === "" ? null : parseInt(valor);
+                if (equipoNum === 2) resultadosEliminatorias[idPartido].goles2 = valor === "" ? null : parseInt(valor);
+            } else if (tipo === 'penales') {
+                if (equipoNum === 1) resultadosEliminatorias[idPartido].penales1 = valor === "" ? null : parseInt(valor);
+                if (equipoNum === 2) resultadosEliminatorias[idPartido].penales2 = valor === "" ? null : parseInt(valor);
+            }
             
             actualizarVistaEliminatorias();
         }
@@ -614,6 +632,7 @@
             contenedorTabla.innerHTML = html;
         }
 
+        // Lógica actualizada para detectar empates y validar penales
         function getEquipoParaEliminatoria(ref) {
             if (clasificadosDirectos[ref]) return clasificadosDirectos[ref];
             if (ref.startsWith('Mejor 3ro') && mejoresTerceros.length === 8) {
@@ -625,7 +644,13 @@
                 if (partidoPrevio && partidoPrevio.goles1 !== null && partidoPrevio.goles2 !== null) {
                     if (partidoPrevio.goles1 > partidoPrevio.goles2) return partidoPrevio.eq1;
                     if (partidoPrevio.goles2 > partidoPrevio.goles1) return partidoPrevio.eq2;
-                    return { nombre: 'Empate (Desempate requerido)' }; 
+                    
+                    // Si hay empate, validamos los penales
+                    if (partidoPrevio.penales1 !== null && partidoPrevio.penales2 !== null) {
+                        if (partidoPrevio.penales1 > partidoPrevio.penales2) return partidoPrevio.eq1;
+                        if (partidoPrevio.penales2 > partidoPrevio.penales1) return partidoPrevio.eq2;
+                    }
+                    return { nombre: 'Empate (Faltan penales)' }; 
                 }
             }
             if (ref.startsWith('Perdedor E')) {
@@ -634,7 +659,12 @@
                 if (partidoPrevio && partidoPrevio.goles1 !== null && partidoPrevio.goles2 !== null) {
                     if (partidoPrevio.goles1 < partidoPrevio.goles2) return partidoPrevio.eq1;
                     if (partidoPrevio.goles2 < partidoPrevio.goles1) return partidoPrevio.eq2;
-                    return { nombre: 'Empate (Desempate requerido)' }; 
+                    
+                    if (partidoPrevio.penales1 !== null && partidoPrevio.penales2 !== null) {
+                        if (partidoPrevio.penales1 < partidoPrevio.penales2) return partidoPrevio.eq1;
+                        if (partidoPrevio.penales2 < partidoPrevio.penales1) return partidoPrevio.eq2;
+                    }
+                    return { nombre: 'Empate (Faltan penales)' }; 
                 }
             }
             return null;
@@ -666,11 +696,22 @@
                             <div class="resultado-inputs">
                                 <div>
                                     <label id="label-goles1-${partido.id}" for="goles1_${partido.id}">...</label>
-                                    <input type="number" id="goles1_${partido.id}" min="0" onchange="actualizarResultadoEliminatoria('${partido.id}', 1, this.value)" onkeydown="manejarTeclas(event)">
+                                    <input type="number" id="goles1_${partido.id}" min="0" onchange="actualizarResultadoEliminatoria('${partido.id}', 1, 'goles', this.value)" onkeydown="manejarTeclas(event)">
                                 </div>
                                 <div>
                                     <label id="label-goles2-${partido.id}" for="goles2_${partido.id}">...</label>
-                                    <input type="number" id="goles2_${partido.id}" min="0" onchange="actualizarResultadoEliminatoria('${partido.id}', 2, this.value)" onkeydown="manejarTeclas(event)">
+                                    <input type="number" id="goles2_${partido.id}" min="0" onchange="actualizarResultadoEliminatoria('${partido.id}', 2, 'goles', this.value)" onkeydown="manejarTeclas(event)">
+                                </div>
+                            </div>
+                            
+                            <div class="penales-inputs">
+                                <div>
+                                    <label id="label-penales1-${partido.id}" for="penales1_${partido.id}">...</label>
+                                    <input type="number" id="penales1_${partido.id}" min="0" onchange="actualizarResultadoEliminatoria('${partido.id}', 1, 'penales', this.value)" onkeydown="manejarTeclas(event)">
+                                </div>
+                                <div>
+                                    <label id="label-penales2-${partido.id}" for="penales2_${partido.id}">...</label>
+                                    <input type="number" id="penales2_${partido.id}" min="0" onchange="actualizarResultadoEliminatoria('${partido.id}', 2, 'penales', this.value)" onkeydown="manejarTeclas(event)">
                                 </div>
                             </div>
                         </div>
@@ -687,7 +728,7 @@
                     let eq2Data = getEquipoParaEliminatoria(partido.ref2);
 
                     if (!resultadosEliminatorias[partido.id]) {
-                        resultadosEliminatorias[partido.id] = { goles1: null, goles2: null, eq1: null, eq2: null };
+                        resultadosEliminatorias[partido.id] = { goles1: null, goles2: null, penales1: null, penales2: null, eq1: null, eq2: null };
                     }
                     resultadosEliminatorias[partido.id].eq1 = eq1Data;
                     resultadosEliminatorias[partido.id].eq2 = eq2Data;
@@ -706,11 +747,17 @@
                     const label2 = document.getElementById(`label-goles2-${partido.id}`);
                     if(label2) label2.innerText = `Goles de ${nombreEq2}:`;
 
+                    // Actualizar textos explícitos de penales para accesibilidad
+                    const labelPen1 = document.getElementById(`label-penales1-${partido.id}`);
+                    if(labelPen1) labelPen1.innerText = `Penales de ${nombreEq1} (solo en caso de empate):`;
+
+                    const labelPen2 = document.getElementById(`label-penales2-${partido.id}`);
+                    if(labelPen2) labelPen2.innerText = `Penales de ${nombreEq2} (solo en caso de empate):`;
+
                     let bgColorPartido = eq1Data && coloresEquipos[eq1Data.id] ? `rgba(${coloresEquipos[eq1Data.id]}, 0.15)` : 'rgba(255, 255, 255, 0.8)';
                     const cajaEl = document.getElementById(`caja-partido-${partido.id}`);
                     if(cajaEl) cajaEl.style.backgroundColor = bgColorPartido;
 
-                    // Actualizar Botones de Calendario Dinámicamente
                     const btnGcal = document.getElementById(`gcal_${partido.id}`);
                     const btnIcs = document.getElementById(`ics_${partido.id}`);
                     
