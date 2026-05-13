@@ -37,6 +37,27 @@
             padding: 10px;
             border-radius: 5px;
         }
+        .zona-horaria-box {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid #ccc;
+        }
+        .zona-horaria-box select {
+            font-size: 1em;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #004d98;
+            font-weight: bold;
+            color: #004d98;
+            cursor: pointer;
+        }
         .main-nav {
             margin-bottom: 20px;
             display: flex;
@@ -87,7 +108,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: background-color 0.5s ease;
         }
-        .fase-container h2:focus {
+        .fase-container h2:focus, .grupo-container h2:focus {
             outline: 2px solid #004d98;
             background-color: #e9ecef;
         }
@@ -114,7 +135,7 @@
         }
         .penales-inputs {
             margin-top: 5px;
-            background-color: #fff3cd; /* Color amarillo tenue para distinguirlo visualmente */
+            background-color: #fff3cd; 
             padding: 15px;
             border-radius: 5px;
             display: flex;
@@ -198,9 +219,21 @@
         <p style="margin: 0;">Realizado por George Hernández 🇲🇽 🇺🇸 🇨🇦</p>
     </header>
 
+    <div class="zona-horaria-box">
+        <label for="selector-zona">🌐 Ajustar horas a mi huso horario:</label>
+        <select id="selector-zona" onchange="cambiarZonaHoraria(parseInt(this.value))">
+            <option value="-6" selected>Costa Rica / Centroamérica / México Centro (UTC-6)</option>
+            <option value="-5">Colombia / Perú / Ecuador / Panamá (UTC-5)</option>
+            <option value="-4">USA Este (Miami) / Venezuela / Bolivia / Chile (UTC-4)</option>
+            <option value="-3">Brasil / Argentina / Uruguay (UTC-3)</option>
+            <option value="2">España / Europa Central (UTC+2)</option>
+        </select>
+    </div>
+
     <nav aria-label="Navegación principal del torneo" class="main-nav">
         <button id="btn-grupos" aria-selected="true" onclick="mostrarSeccion('grupos')">Fase de grupos</button>
-        <button id="btn-eliminatorias" aria-selected="false" onclick="mostrarSeccion('eliminatorias')">Fases de eliminatorias directas</button>
+        <button id="btn-eliminatorias" aria-selected="false" onclick="mostrarSeccion('eliminatorias')">Fases de eliminatorias</button>
+        <button id="btn-pordia" aria-selected="false" onclick="mostrarSeccion('pordia')">📅 Juegos por Día</button>
         <button class="btn-reset" onclick="resetearCalendario()">🔄 Reiniciar Calendario</button>
     </nav>
 
@@ -224,6 +257,12 @@
 
             <div id="contenedor-eliminatorias"></div>
         </section>
+
+        <section id="seccion-pordia" aria-labelledby="titulo-fase-pordia" style="display: none;">
+            <h1 id="titulo-fase-pordia">Calendario Cronológico por Día</h1>
+            <p>Navega con la tecla 2 para saltar por día y la tecla 3 para ir partido a partido ordenados por hora de inicio.</p>
+            <div id="contenedor-pordia"></div>
+        </section>
     </main>
 
     <div class="footer-actions">
@@ -246,6 +285,19 @@
             'ENG': '206, 17, 38', 'CRO': '255, 0, 0', 'GHA': '0, 107, 63', 'PAN': '210, 16, 52'
         };
 
+        const ordenFechasCronologico = [
+            "jueves 11 de junio", "viernes 12 de junio", "sábado 13 de junio", "domingo 14 de junio",
+            "lunes 15 de junio", "martes 16 de junio", "miércoles 17 de junio", "jueves 18 de junio",
+            "viernes 19 de junio", "sábado 20 de junio", "domingo 21 de junio", "lunes 22 de junio",
+            "martes 23 de junio", "miércoles 24 de junio", "jueves 25 de junio", "viernes 26 de junio",
+            "sábado 27 de junio", "domingo 28 de junio", "lunes 29 de junio", "martes 30 de junio",
+            "miércoles 1 de julio", "jueves 2 de julio", "viernes 3 de julio", "sábado 4 de julio",
+            "domingo 5 de julio", "lunes 6 de julio", "martes 7 de julio", "jueves 9 de julio",
+            "viernes 10 de julio", "martes 14 de julio", "miércoles 15 de julio", "sábado 18 de julio",
+            "domingo 19 de julio"
+        ];
+
+        let offsetGlobal = -6; 
         let datosTorneo = {};
         let clasificadosDirectos = {};
         let mejoresTerceros = [];
@@ -328,6 +380,68 @@
             };
         }
 
+        // --- SISTEMA DE CONVERSIÓN DE HORARIOS DINÁMICO ---
+        function ajustarHoraString(horaBaseStr, offsetDestino) {
+            if (!horaBaseStr || horaBaseStr.toLowerCase().includes('confirmar')) {
+                return 'Horario por confirmar';
+            }
+            
+            const offsetBase = -6; 
+            const diferencia = offsetDestino - offsetBase;
+            
+            if (diferencia === 0) return horaBaseStr;
+
+            let limpia = horaBaseStr.toLowerCase().replace('.', '').trim();
+            let esPM = limpia.includes('pm');
+            let partes = limpia.replace('am','').replace('pm','').trim().split(':');
+            let horas = parseInt(partes[0]);
+            let mins = partes[1] || '00';
+
+            if (esPM && horas !== 12) horas += 12;
+            if (!esPM && horas === 12) horas = 0;
+
+            horas += diferencia;
+            let diaApendice = "";
+
+            if (horas >= 24) {
+                horas -= 24;
+                diaApendice = " (día siguiente)";
+            } else if (horas < 0) {
+                horas += 24;
+                diaApendice = " (día anterior)";
+            }
+
+            let ampmFinal = horas >= 12 ? 'pm' : 'am';
+            let horasMostrar = horas % 12;
+            if (horasMostrar === 0) horasMostrar = 12;
+
+            return `${horasMostrar}:${mins} ${ampmFinal}${diaApendice}`;
+        }
+
+        // --- ALGORITMO PARA ORDENAR JUEGOS NATIVAMENTE POR HORA ---
+        function horaAMinutos(horaStr) {
+            if (!horaStr || horaStr.toLowerCase().includes('confirmar')) {
+                return 9999; // Mandar al final del día
+            }
+            let limpia = horaStr.toLowerCase().replace('.', '').trim();
+            let esPM = limpia.includes('pm');
+            let partes = limpia.replace('am','').replace('pm','').trim().split(':');
+            let horas = parseInt(partes[0]);
+            let mins = parseInt(partes[1]) || 0;
+
+            if (esPM && horas !== 12) horas += 12;
+            if (!esPM && horas === 12) horas = 0;
+
+            return (horas * 60) + mins;
+        }
+
+        function cambiarZonaHoraria(nuevoOffset) {
+            offsetGlobal = nuevoOffset;
+            renderizarGrupos();
+            actualizarVistaEliminatorias();
+            renderizarPorDia();
+        }
+
         function obtenerFechasISO(fechaStr, horaStr) {
             const meses = {"junio": "06", "julio": "07"};
             let partesFecha = fechaStr.toLowerCase().split(" ");
@@ -394,22 +508,20 @@
                 clasificadosDirectos = {};
                 mejoresTerceros = [];
                 resultadosEliminatorias = {};
+                
                 renderizarGrupos();
                 
                 fasesEliminatorias.forEach(fase => {
                     fase.partidos.forEach(partido => {
-                        const in1 = document.getElementById(`goles1_${partido.id}`);
-                        const in2 = document.getElementById(`goles2_${partido.id}`);
-                        const pen1 = document.getElementById(`penales1_${partido.id}`);
-                        const pen2 = document.getElementById(`penales2_${partido.id}`);
-                        if(in1) in1.value = '';
-                        if(in2) in2.value = '';
-                        if(pen1) pen1.value = '';
-                        if(pen2) pen2.value = '';
+                        ['goles1_', 'goles2_', 'penales1_', 'penales2_', 'goles1_dia_', 'goles2_dia_', 'penales1_dia_', 'penales2_dia_'].forEach(pref => {
+                            const inp = document.getElementById(`${pref}${partido.id}`);
+                            if (inp) inp.value = '';
+                        });
                     });
                 });
                 
                 actualizarVistaEliminatorias();
+                renderizarPorDia();
                 mostrarSeccion('grupos');
             }
         }
@@ -433,6 +545,7 @@
                     let val1 = partido.goles1 !== null ? partido.goles1 : "";
                     let val2 = partido.goles2 !== null ? partido.goles2 : "";
 
+                    const horaConvertida = ajustarHoraString(partido.hora, offsetGlobal);
                     const fechas = obtenerFechasISO(partido.fecha, partido.hora);
                     const tituloEvt = `FIFA 2026: ${nombreEq1} vs ${nombreEq2}`;
                     const detallesEvt = `Partido Fase de Grupos. Sede: ${partido.sede}`;
@@ -442,7 +555,7 @@
                         <div class="partido">
                             <h3 id="partido-${partido.id}">Jornada #${partido.jornada} ${nombreEq1} - ${nombreEq2}</h3>
                             <p><strong>Fecha:</strong> ${partido.fecha}</p>
-                            <p><strong>Hora:</strong> ${partido.hora}</p>
+                            <p><strong>Hora:</strong> ${horaConvertida}</p>
                             <p><strong>Sede:</strong> ${partido.sede}</p>
                             
                             <div class="calendario-acciones">
@@ -479,10 +592,14 @@
             if (equipoNum === 1) partido.goles1 = valor === "" ? null : parseInt(valor);
             if (equipoNum === 2) partido.goles2 = valor === "" ? null : parseInt(valor);
             
+            const inpDia = document.getElementById(`goles${equipoNum}_dia_${idPartido}`);
+            if (inpDia && inpDia.value !== valor) inpDia.value = valor;
+            const inpNorm = document.getElementById(`goles${equipoNum}_${idPartido}`);
+            if (inpNorm && inpNorm.value !== valor) inpNorm.value = valor;
+
             calcularMotorGlobal();
         }
 
-        // Nuevo motor para eliminatorias que discrimina si es gol normal o penal
         function actualizarResultadoEliminatoria(idPartido, equipoNum, tipo, valor) {
             if (!resultadosEliminatorias[idPartido]) {
                 resultadosEliminatorias[idPartido] = { goles1: null, goles2: null, penales1: null, penales2: null, eq1: null, eq2: null };
@@ -490,12 +607,23 @@
             if (tipo === 'goles') {
                 if (equipoNum === 1) resultadosEliminatorias[idPartido].goles1 = valor === "" ? null : parseInt(valor);
                 if (equipoNum === 2) resultadosEliminatorias[idPartido].goles2 = valor === "" ? null : parseInt(valor);
+                
+                const iDia = document.getElementById(`goles${equipoNum}_dia_${idPartido}`);
+                const iNorm = document.getElementById(`goles${equipoNum}_${idPartido}`);
+                if (iDia && iDia.value !== valor) iDia.value = valor;
+                if (iNorm && iNorm.value !== valor) iNorm.value = valor;
             } else if (tipo === 'penales') {
                 if (equipoNum === 1) resultadosEliminatorias[idPartido].penales1 = valor === "" ? null : parseInt(valor);
                 if (equipoNum === 2) resultadosEliminatorias[idPartido].penales2 = valor === "" ? null : parseInt(valor);
+                
+                const pDia = document.getElementById(`penales${equipoNum}_dia_${idPartido}`);
+                const pNorm = document.getElementById(`penales${equipoNum}_${idPartido}`);
+                if (pDia && pDia.value !== valor) pDia.value = valor;
+                if (pNorm && pNorm.value !== valor) pNorm.value = valor;
             }
             
             actualizarVistaEliminatorias();
+            renderizarPorDia(); 
         }
 
         function calcularMotorGlobal() {
@@ -579,6 +707,7 @@
             }
 
             actualizarVistaEliminatorias();
+            renderizarPorDia();
         }
 
         function calcularTablaPosiciones(letraGrupo) {
@@ -632,7 +761,6 @@
             contenedorTabla.innerHTML = html;
         }
 
-        // Lógica actualizada para detectar empates y validar penales
         function getEquipoParaEliminatoria(ref) {
             if (clasificadosDirectos[ref]) return clasificadosDirectos[ref];
             if (ref.startsWith('Mejor 3ro') && mejoresTerceros.length === 8) {
@@ -645,7 +773,6 @@
                     if (partidoPrevio.goles1 > partidoPrevio.goles2) return partidoPrevio.eq1;
                     if (partidoPrevio.goles2 > partidoPrevio.goles1) return partidoPrevio.eq2;
                     
-                    // Si hay empate, validamos los penales
                     if (partidoPrevio.penales1 !== null && partidoPrevio.penales2 !== null) {
                         if (partidoPrevio.penales1 > partidoPrevio.penales2) return partidoPrevio.eq1;
                         if (partidoPrevio.penales2 > partidoPrevio.penales1) return partidoPrevio.eq2;
@@ -685,7 +812,7 @@
                         <div class="partido" id="caja-partido-${partido.id}">
                             <h3 id="titulo-partido-${partido.id}">...</h3>
                             <p><strong>Fecha:</strong> ${partido.fecha}</p>
-                            <p><strong>Hora:</strong> ${partido.hora}</p>
+                            <p id="hora-partido-${partido.id}"><strong>Hora:</strong> ${ajustarHoraString(partido.hora, offsetGlobal)}</p>
                             <p><strong>Sede:</strong> ${partido.sede}</p>
                             
                             <div class="calendario-acciones">
@@ -741,18 +868,20 @@
                     const tituloEl = document.getElementById(`titulo-partido-${partido.id}`);
                     if(tituloEl) tituloEl.innerText = tituloStr;
 
+                    const horaEl = document.getElementById(`hora-partido-${partido.id}`);
+                    if(horaEl) horaEl.innerHTML = `<strong>Hora:</strong> ${ajustarHoraString(partido.hora, offsetGlobal)}`;
+
                     const label1 = document.getElementById(`label-goles1-${partido.id}`);
                     if(label1) label1.innerText = `Goles de ${nombreEq1}:`;
 
                     const label2 = document.getElementById(`label-goles2-${partido.id}`);
                     if(label2) label2.innerText = `Goles de ${nombreEq2}:`;
 
-                    // Actualizar textos explícitos de penales para accesibilidad
                     const labelPen1 = document.getElementById(`label-penales1-${partido.id}`);
-                    if(labelPen1) labelPen1.innerText = `Penales de ${nombreEq1} (solo en caso de empate):`;
+                    if(labelPen1) labelPen1.innerText = `Penales de ${nombreEq1} (en empate):`;
 
                     const labelPen2 = document.getElementById(`label-penales2-${partido.id}`);
-                    if(labelPen2) labelPen2.innerText = `Penales de ${nombreEq2} (solo en caso de empate):`;
+                    if(labelPen2) labelPen2.innerText = `Penales de ${nombreEq2} (en empate):`;
 
                     let bgColorPartido = eq1Data && coloresEquipos[eq1Data.id] ? `rgba(${coloresEquipos[eq1Data.id]}, 0.15)` : 'rgba(255, 255, 255, 0.8)';
                     const cajaEl = document.getElementById(`caja-partido-${partido.id}`);
@@ -776,12 +905,127 @@
             });
         }
 
+        // --- SISTEMA ACTUALIZADO DE RENDERIZADO POR DÍA Y HORA INTERNA ---
+        function renderizarPorDia() {
+            const contenedor = document.getElementById('contenedor-pordia');
+            if (!contenedor) return;
+            
+            let todosLosPartidos = [];
+            
+            Object.keys(datosTorneo).forEach(letra => {
+                datosTorneo[letra].partidos.forEach(p => {
+                    const eq1 = datosTorneo[letra].equipos.find(e => e.id === p.eq1).nombre;
+                    const eq2 = datosTorneo[letra].equipos.find(e => e.id === p.eq2).nombre;
+                    todosLosPartidos.push({
+                        ...p,
+                        esGrupo: true,
+                        letraGrupo: letra,
+                        tituloMostrar: `Grupo ${letra}: ${eq1} vs ${eq2}`,
+                        nombreEq1: eq1,
+                        nombreEq2: eq2
+                    });
+                });
+            });
+
+            fasesEliminatorias.forEach(faseObj => {
+                faseObj.partidos.forEach(p => {
+                    let rE = resultadosEliminatorias[p.id] || {};
+                    let n1 = rE.eq1 ? rE.eq1.nombre : (p.ref1.startsWith('E') ? `Ganador ${p.ref1}` : p.ref1);
+                    let n2 = rE.eq2 ? rE.eq2.nombre : (p.ref2.startsWith('E') ? `Ganador ${p.ref2}` : p.ref2);
+                    
+                    todosLosPartidos.push({
+                        ...p,
+                        esGrupo: false,
+                        faseNombre: faseObj.fase,
+                        tituloMostrar: `${p.esFinal ? '🌟 LA GRAN FINAL' : (p.esTercerLugar ? '🥉 3er Lugar' : faseObj.fase)}: ${n1} vs ${n2}`,
+                        nombreEq1: n1,
+                        nombreEq2: n2,
+                        goles1: rE.goles1,
+                        goles2: rE.goles2,
+                        penales1: rE.penales1,
+                        penales2: rE.penales2
+                    });
+                });
+            });
+
+            let htmlsalida = '';
+            
+            ordenFechasCronologico.forEach((fechaStr, indexDia) => {
+                let partidosDelDia = todosLosPartidos.filter(p => p.fecha.toLowerCase() === fechaStr.toLowerCase());
+                
+                if (partidosDelDia.length > 0) {
+                    // Ordenamiento estricto por hora de juego para garantizar secuencia lógica en el lector
+                    partidosDelDia.sort((a, b) => horaAMinutos(a.hora) - horaAMinutos(b.hora));
+
+                    htmlsalida += `
+                        <div class="fase-container">
+                            <h2 id="encabezado-dia-${indexDia}" tabindex="-1">${fechaStr}</h2>
+                    `;
+                    
+                    partidosDelDia.forEach(p => {
+                        let v1 = p.goles1 !== null && p.goles1 !== undefined ? p.goles1 : '';
+                        let v2 = p.goles2 !== null && p.goles2 !== undefined ? p.goles2 : '';
+                        let horaAjustada = ajustarHoraString(p.hora, offsetGlobal);
+
+                        htmlsalida += `
+                            <div class="partido">
+                                <h3 id="partido-dia-${p.id}">${p.tituloMostrar}</h3>
+                                <p><strong>Hora:</strong> ${horaAjustada}</p>
+                                <p><strong>Sede:</strong> ${p.sede}</p>
+                                
+                                <div class="resultado-inputs">
+                                    <div>
+                                        <label for="goles1_dia_${p.id}">Goles de ${p.nombreEq1}:</label>
+                                        <input type="number" id="goles1_dia_${p.id}" value="${v1}" min="0" 
+                                            onchange="${p.esGrupo ? `actualizarResultado('${p.letraGrupo}', '${p.id}', 1, this.value)` : `actualizarResultadoEliminatoria('${p.id}', 1, 'goles', this.value)`}" 
+                                            onkeydown="manejarTeclas(event)">
+                                    </div>
+                                    <div>
+                                        <label for="goles2_dia_${p.id}">Goles de ${p.nombreEq2}:</label>
+                                        <input type="number" id="goles2_dia_${p.id}" value="${v2}" min="0" 
+                                            onchange="${p.esGrupo ? `actualizarResultado('${p.letraGrupo}', '${p.id}', 2, this.value)` : `actualizarResultadoEliminatoria('${p.id}', 2, 'goles', this.value)`}" 
+                                            onkeydown="manejarTeclas(event)">
+                                    </div>
+                                </div>
+                        `;
+
+                        if (!p.esGrupo) {
+                            let pen1 = p.penales1 !== null && p.penales1 !== undefined ? p.penales1 : '';
+                            let pen2 = p.penales2 !== null && p.penales2 !== undefined ? p.penales2 : '';
+                            htmlsalida += `
+                                <div class="penales-inputs">
+                                    <div>
+                                        <label for="penales1_dia_${p.id}">Penales ${p.nombreEq1}:</label>
+                                        <input type="number" id="penales1_dia_${p.id}" value="${pen1}" min="0" 
+                                            onchange="actualizarResultadoEliminatoria('${p.id}', 1, 'penales', this.value)" onkeydown="manejarTeclas(event)">
+                                    </div>
+                                    <div>
+                                        <label for="penales2_dia_${p.id}">Penales ${p.nombreEq2}:</label>
+                                        <input type="number" id="penales2_dia_${p.id}" value="${pen2}" min="0" 
+                                            onchange="actualizarResultadoEliminatoria('${p.id}', 2, 'penales', this.value)" onkeydown="manejarTeclas(event)">
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        htmlsalida += `</div>`;
+                    });
+                    
+                    htmlsalida += `</div>`;
+                }
+            });
+
+            contenedor.innerHTML = htmlsalida;
+        }
+
         function mostrarSeccion(seccion) {
             document.getElementById('seccion-grupos').style.display = seccion === 'grupos' ? 'block' : 'none';
             document.getElementById('seccion-eliminatorias').style.display = seccion === 'eliminatorias' ? 'block' : 'none';
+            document.getElementById('seccion-pordia').style.display = seccion === 'pordia' ? 'block' : 'none';
             
             document.getElementById('btn-grupos').setAttribute('aria-selected', seccion === 'grupos');
             document.getElementById('btn-eliminatorias').setAttribute('aria-selected', seccion === 'eliminatorias');
+            document.getElementById('btn-pordia').setAttribute('aria-selected', seccion === 'pordia');
         }
 
         window.onload = () => {
@@ -789,6 +1033,7 @@
             renderizarGrupos();
             construirEstructuraEliminatorias();
             actualizarVistaEliminatorias();
+            renderizarPorDia(); 
         };
     </script>
 </body>
