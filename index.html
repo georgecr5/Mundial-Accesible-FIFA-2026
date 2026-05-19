@@ -378,6 +378,51 @@
                 K: { equipos: [ { id: 'POR', nombre: 'Portugal 🇵🇹' }, { id: 'COD', nombre: 'RD Congo 🇨🇩' }, { id: 'UZB', nombre: 'Uzbekistán 🇺🇿' }, { id: 'COL', nombre: 'Colombia 🇨🇴' } ], partidos: [ { id: 'K1', jornada: 1, fecha: 'miércoles 17 de junio', hora: '11:00 am', sede: 'Estadio Houston', eq1: 'POR', eq2: 'COD', goles1: null, goles2: null }, { id: 'K2', jornada: 1, fecha: 'miércoles 17 de junio', hora: '8:00 pm', sede: 'Estadio Ciudad de México', eq1: 'UZB', eq2: 'COL', goles1: null, goles2: null }, { id: 'K3', jornada: 2, fecha: 'martes 23 de junio', hora: '11:00 am', sede: 'Estadio Houston', eq1: 'POR', eq2: 'UZB', goles1: null, goles2: null }, { id: 'K4', jornada: 2, fecha: 'martes 23 de junio', hora: '8:00 pm', sede: 'Estadio Guadalajara', eq1: 'COL', eq2: 'COD', goles1: null, goles2: null }, { id: 'K5', jornada: 3, fecha: 'sábado 27 de junio', hora: '5:30 pm', sede: 'Estadio Miami', eq1: 'COL', eq2: 'POR', goles1: null, goles2: null }, { id: 'K6', jornada: 3, fecha: 'sábado 27 de junio', hora: '5:30 pm', sede: 'Estadio Atlanta', eq1: 'COD', eq2: 'UZB', goles1: null, goles2: null } ] },
                 L: { equipos: [ { id: 'ENG', nombre: 'Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿' }, { id: 'CRO', nombre: 'Croacia 🇭🇷' }, { id: 'GHA', nombre: 'Ghana 🇬🇭' }, { id: 'PAN', nombre: 'Panamá 🇵🇦' } ], partidos: [ { id: 'L1', jornada: 1, fecha: 'miércoles 17 de junio', hora: '2:00 pm', sede: 'Estadio Dallas', eq1: 'ENG', eq2: 'CRO', goles1: null, goles2: null }, { id: 'L2', jornada: 1, fecha: 'miércoles 17 de junio', hora: '5:00 pm', sede: 'Estadio Toronto', eq1: 'GHA', eq2: 'PAN', goles1: null, goles2: null }, { id: 'L3', jornada: 2, fecha: 'martes 23 de junio', hora: '2:00 pm', sede: 'Estadio Boston', eq1: 'ENG', eq2: 'GHA', goles1: null, goles2: null }, { id: 'L4', jornada: 2, fecha: 'martes 23 de junio', hora: '5:00 pm', sede: 'Estadio Toronto', eq1: 'PAN', eq2: 'CRO', goles1: null, goles2: null }, { id: 'L5', jornada: 3, fecha: 'sábado 27 de junio', hora: '3:00 pm', sede: 'Estadio Nueva York Nueva Jersey', eq1: 'PAN', eq2: 'ENG', goles1: null, goles2: null }, { id: 'L6', jornada: 3, fecha: 'sábado 27 de junio', hora: '3:00 pm', sede: 'Estadio Filadelfia', eq1: 'CRO', eq2: 'GHA', goles1: null, goles2: null } ] }
             };
+
+            resultadosEliminatorias = {};
+
+            // RECUPERAR DATOS DEL NAVEGADOR
+            const guardado = localStorage.getItem('mundial2026_datos');
+            if (guardado) {
+                try {
+                    const parsed = JSON.parse(guardado);
+                    if (parsed.grupos) {
+                        Object.keys(parsed.grupos).forEach(letra => {
+                            parsed.grupos[letra].forEach(pg => {
+                                let partidoActual = datosTorneo[letra].partidos.find(p => p.id === pg.id);
+                                if (partidoActual) {
+                                    partidoActual.goles1 = pg.goles1;
+                                    partidoActual.goles2 = pg.goles2;
+                                }
+                            });
+                        });
+                    }
+                    if (parsed.eliminatorias) {
+                        resultadosEliminatorias = parsed.eliminatorias;
+                    }
+                } catch(e) {
+                    console.error("Error leyendo datos locales", e);
+                }
+            }
+        }
+
+        // --- SISTEMA DE AUTOGUARDADO EN NAVEGADOR ---
+        function guardarEnLocal() {
+            const datosAguardar = {
+                grupos: {},
+                eliminatorias: {}
+            };
+            
+            Object.keys(datosTorneo).forEach(letra => {
+                datosAguardar.grupos[letra] = datosTorneo[letra].partidos.map(p => ({id: p.id, goles1: p.goles1, goles2: p.goles2}));
+            });
+            
+            Object.keys(resultadosEliminatorias).forEach(id => {
+                const r = resultadosEliminatorias[id];
+                datosAguardar.eliminatorias[id] = { goles1: r.goles1, goles2: r.goles2, penales1: r.penales1, penales2: r.penales2 };
+            });
+            
+            localStorage.setItem('mundial2026_datos', JSON.stringify(datosAguardar));
         }
 
         // --- SISTEMA DE CONVERSIÓN DE HORARIOS DINÁMICO ---
@@ -418,10 +463,9 @@
             return `${horasMostrar}:${mins} ${ampmFinal}${diaApendice}`;
         }
 
-        // --- ALGORITMO PARA ORDENAR JUEGOS NATIVAMENTE POR HORA ---
         function horaAMinutos(horaStr) {
             if (!horaStr || horaStr.toLowerCase().includes('confirmar')) {
-                return 9999; // Mandar al final del día
+                return 9999; 
             }
             let limpia = horaStr.toLowerCase().replace('.', '').trim();
             let esPM = limpia.includes('pm');
@@ -437,6 +481,7 @@
 
         function cambiarZonaHoraria(nuevoOffset) {
             offsetGlobal = nuevoOffset;
+            localStorage.setItem('mundial2026_zona', nuevoOffset); // Guardar también la zona elegida
             renderizarGrupos();
             actualizarVistaEliminatorias();
             renderizarPorDia();
@@ -478,24 +523,6 @@
             return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${start}/${end}&details=${encodeURIComponent(detalles)}&location=${encodeURIComponent(ubi)}`;
         }
 
-        function descargarICS(titulo, detalles, ubi, start, end, eq1, eq2) {
-            let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\n" +
-                "DTSTART:" + start + "\n" +
-                "DTEND:" + end + "\n" +
-                "SUMMARY:" + titulo + "\n" +
-                "DESCRIPTION:" + detalles + "\n" +
-                "LOCATION:" + ubi + "\n" +
-                "END:VEVENT\nEND:VCALENDAR";
-            
-            let blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            let url = window.URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.href = url;
-            a.download = `Mundial2026_${eq1.replace(/\s+/g,'_')}_vs_${eq2.replace(/\s+/g,'_')}.ics`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-
         function manejarTeclas(e) {
             if (e.key === 'Enter' || e.key === 'Escape') {
                 e.target.blur();
@@ -504,6 +531,8 @@
 
         function resetearCalendario() {
             if (confirm("¿Estás seguro de que deseas borrar todos los resultados y reiniciar el calendario a cero?")) {
+                localStorage.removeItem('mundial2026_datos'); // Limpiar bóveda
+                
                 inicializarDatos();
                 clasificadosDirectos = {};
                 mejoresTerceros = [];
@@ -560,7 +589,6 @@
                             
                             <div class="calendario-acciones">
                                 <a href="${urlGcal}" target="_blank" class="btn-cal" aria-label="Añadir a Google Calendar: ${nombreEq1} contra ${nombreEq2}">📅 Añadir a Google</a>
-                                <button class="btn-cal" onclick="descargarICS('${tituloEvt}', '${detallesEvt}', '${partido.sede}', '${fechas.start}', '${fechas.end}', '${nombreEq1}', '${nombreEq2}')" aria-label="Descargar para Apple o Outlook: ${nombreEq1} contra ${nombreEq2}">📅 Apple/Otros (.ics)</button>
                             </div>
 
                             <div class="resultado-inputs">
@@ -597,6 +625,7 @@
             const inpNorm = document.getElementById(`goles${equipoNum}_${idPartido}`);
             if (inpNorm && inpNorm.value !== valor) inpNorm.value = valor;
 
+            guardarEnLocal(); // Disparo de guardado automático
             calcularMotorGlobal();
         }
 
@@ -622,6 +651,7 @@
                 if (pNorm && pNorm.value !== valor) pNorm.value = valor;
             }
             
+            guardarEnLocal(); // Disparo de guardado automático
             actualizarVistaEliminatorias();
             renderizarPorDia(); 
         }
@@ -817,7 +847,6 @@
                             
                             <div class="calendario-acciones">
                                 <a id="gcal_${partido.id}" href="#" target="_blank" class="btn-cal">📅 Añadir a Google</a>
-                                <button id="ics_${partido.id}" class="btn-cal">📅 Apple/Otros (.ics)</button>
                             </div>
 
                             <div class="resultado-inputs">
@@ -888,24 +917,19 @@
                     if(cajaEl) cajaEl.style.backgroundColor = bgColorPartido;
 
                     const btnGcal = document.getElementById(`gcal_${partido.id}`);
-                    const btnIcs = document.getElementById(`ics_${partido.id}`);
                     
-                    if (btnGcal && btnIcs) {
+                    if (btnGcal) {
                         const fechas = obtenerFechasISO(partido.fecha, partido.hora);
                         const tituloEvt = `FIFA 2026: ${nombreEq1} vs ${nombreEq2}`;
                         const detallesEvt = `Partido de ${faseObj.fase}. Sede: ${partido.sede}`;
                         
                         btnGcal.href = generarUrlGoogle(tituloEvt, detallesEvt, partido.sede, fechas.start, fechas.end);
                         btnGcal.setAttribute("aria-label", `Añadir a Google Calendar: ${nombreEq1} contra ${nombreEq2}`);
-                        
-                        btnIcs.onclick = () => descargarICS(tituloEvt, detallesEvt, partido.sede, fechas.start, fechas.end, nombreEq1, nombreEq2);
-                        btnIcs.setAttribute("aria-label", `Descargar para Apple o Outlook: ${nombreEq1} contra ${nombreEq2}`);
                     }
                 });
             });
         }
 
-        // --- SISTEMA ACTUALIZADO DE RENDERIZADO POR DÍA Y HORA INTERNA ---
         function renderizarPorDia() {
             const contenedor = document.getElementById('contenedor-pordia');
             if (!contenedor) return;
@@ -954,7 +978,6 @@
                 let partidosDelDia = todosLosPartidos.filter(p => p.fecha.toLowerCase() === fechaStr.toLowerCase());
                 
                 if (partidosDelDia.length > 0) {
-                    // Ordenamiento estricto por hora de juego para garantizar secuencia lógica en el lector
                     partidosDelDia.sort((a, b) => horaAMinutos(a.hora) - horaAMinutos(b.hora));
 
                     htmlsalida += `
@@ -1029,11 +1052,17 @@
         }
 
         window.onload = () => {
-            inicializarDatos();
+            let zonaGuardada = localStorage.getItem('mundial2026_zona');
+            if(zonaGuardada !== null) {
+                offsetGlobal = parseInt(zonaGuardada);
+                const selector = document.getElementById('selector-zona');
+                if(selector) selector.value = offsetGlobal;
+            }
+
+            inicializarDatos(); 
             renderizarGrupos();
             construirEstructuraEliminatorias();
-            actualizarVistaEliminatorias();
-            renderizarPorDia(); 
+            calcularMotorGlobal(); 
         };
     </script>
 </body>
