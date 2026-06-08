@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-width=1.0">
     <title>Calendario Interactivo FIFA 2026</title>
+    
+    <link rel="icon" type="image/png" href="icono.png">
+    <link rel="apple-touch-icon" href="icono.png">
+    <meta name="theme-color" content="#004d98">
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -381,7 +386,6 @@
 
             resultadosEliminatorias = {};
 
-            // RECUPERAR DATOS DEL NAVEGADOR
             const guardado = localStorage.getItem('mundial2026_datos');
             if (guardado) {
                 try {
@@ -406,7 +410,6 @@
             }
         }
 
-        // --- SISTEMA DE AUTOGUARDADO EN NAVEGADOR ---
         function guardarEnLocal() {
             const datosAguardar = {
                 grupos: {},
@@ -425,7 +428,6 @@
             localStorage.setItem('mundial2026_datos', JSON.stringify(datosAguardar));
         }
 
-        // --- SISTEMA DE CONVERSIÓN DE HORARIOS DINÁMICO ---
         function ajustarHoraString(horaBaseStr, offsetDestino) {
             if (!horaBaseStr || horaBaseStr.toLowerCase().includes('confirmar')) {
                 return 'Horario por confirmar';
@@ -481,7 +483,7 @@
 
         function cambiarZonaHoraria(nuevoOffset) {
             offsetGlobal = nuevoOffset;
-            localStorage.setItem('mundial2026_zona', nuevoOffset); // Guardar también la zona elegida
+            localStorage.setItem('mundial2026_zona', nuevoOffset);
             renderizarGrupos();
             actualizarVistaEliminatorias();
             renderizarPorDia();
@@ -531,7 +533,7 @@
 
         function resetearCalendario() {
             if (confirm("¿Estás seguro de que deseas borrar todos los resultados y reiniciar el calendario a cero?")) {
-                localStorage.removeItem('mundial2026_datos'); // Limpiar bóveda
+                localStorage.removeItem('mundial2026_datos');
                 
                 inicializarDatos();
                 clasificadosDirectos = {};
@@ -625,7 +627,7 @@
             const inpNorm = document.getElementById(`goles${equipoNum}_${idPartido}`);
             if (inpNorm && inpNorm.value !== valor) inpNorm.value = valor;
 
-            guardarEnLocal(); // Disparo de guardado automático
+            guardarEnLocal();
             calcularMotorGlobal();
         }
 
@@ -651,7 +653,7 @@
                 if (pNorm && pNorm.value !== valor) pNorm.value = valor;
             }
             
-            guardarEnLocal(); // Disparo de guardado automático
+            guardarEnLocal();
             actualizarVistaEliminatorias();
             renderizarPorDia(); 
         }
