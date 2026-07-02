@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-width=1.0">
     <title>Calendario Interactivo FIFA 2026</title>
     
+    <!-- ETIQUETAS PARA EL ÍCONO DE LA APP (FAVICON Y APPLE TOUCH ICON) -->
     <link rel="icon" type="image/png" href="icono.png">
     <link rel="apple-touch-icon" href="icono.png">
     <meta name="theme-color" content="#004d98">
@@ -257,7 +258,8 @@
                 <a href="#titulo-fase-OctavosdeFinal">Octavos de Final</a>
                 <a href="#titulo-fase-CuartosdeFinal">Cuartos de Final</a>
                 <a href="#titulo-fase-Semifinales">Semifinales</a>
-                <a href="#titulo-fase-TercerLugaryFinal">Tercer Lugar y Final</a>
+                <a href="#titulo-fase-TercerLugar">Tercer Lugar</a>
+                <a href="#titulo-fase-Final">Final</a>
             </nav>
 
             <div id="contenedor-eliminatorias"></div>
@@ -271,6 +273,9 @@
     </main>
 
     <div class="footer-actions">
+        <button class="btn-cal" style="font-size: 1.1em; padding: 10px 20px;" onclick="exportarRespaldo()">💾 Exportar respaldo</button>
+        <button class="btn-cal" style="font-size: 1.1em; padding: 10px 20px;" onclick="document.getElementById('archivo-respaldo').click()">📂 Importar respaldo</button>
+        <input id="archivo-respaldo" type="file" accept="application/json,.json" style="display: none;" onchange="importarRespaldo(event)">
         <button class="btn-reset" style="font-size: 1.1em; padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px;" onclick="resetearCalendario()">🔄 Reiniciar Calendario Completo</button>
     </div>
 
@@ -298,7 +303,7 @@
             "sábado 27 de junio", "domingo 28 de junio", "lunes 29 de junio", "martes 30 de junio",
             "miércoles 1 de julio", "jueves 2 de julio", "viernes 3 de julio", "sábado 4 de julio",
             "domingo 5 de julio", "lunes 6 de julio", "martes 7 de julio", "jueves 9 de julio",
-            "viernes 10 de julio", "martes 14 de julio", "miércoles 15 de julio", "sábado 18 de julio",
+            "viernes 10 de julio", "sábado 11 de julio", "martes 14 de julio", "miércoles 15 de julio", "sábado 18 de julio",
             "domingo 19 de julio"
         ];
 
@@ -312,44 +317,44 @@
             {
                 fase: "Dieciseisavos de Final",
                 partidos: [
-                    { id: 'E73', fecha: 'domingo 28 de junio', hora: 'Horario por confirmar', sede: 'Estadio Los Ángeles', ref1: '1A', ref2: 'Mejor 3ro 1' },
-                    { id: 'E74', fecha: 'domingo 28 de junio', hora: 'Horario por confirmar', sede: 'Estadio Boston', ref1: '2B', ref2: '2E' },
-                    { id: 'E75', fecha: 'lunes 29 de junio', hora: 'Horario por confirmar', sede: 'Estadio Houston', ref1: '1C', ref2: 'Mejor 3ro 2' },
-                    { id: 'E76', fecha: 'lunes 29 de junio', hora: 'Horario por confirmar', sede: 'Estadio Ciudad de México', ref1: '1F', ref2: '2C' },
-                    { id: 'E77', fecha: 'martes 30 de junio', hora: 'Horario por confirmar', sede: 'Estadio Nueva York/NJ', ref1: '1D', ref2: 'Mejor 3ro 3' },
-                    { id: 'E78', fecha: 'martes 30 de junio', hora: 'Horario por confirmar', sede: 'Estadio Dallas', ref1: '2A', ref2: '2H' },
-                    { id: 'E79', fecha: 'miércoles 1 de julio', hora: 'Horario por confirmar', sede: 'Estadio Atlanta', ref1: '1E', ref2: 'Mejor 3ro 4' },
-                    { id: 'E80', fecha: 'miércoles 1 de julio', hora: 'Horario por confirmar', sede: 'Estadio Seattle', ref1: '1G', ref2: '2J' },
-                    { id: 'E81', fecha: 'jueves 2 de julio', hora: 'Horario por confirmar', sede: 'Estadio Los Ángeles', ref1: '1B', ref2: 'Mejor 3ro 5' },
-                    { id: 'E82', fecha: 'jueves 2 de julio', hora: 'Horario por confirmar', sede: 'Estadio BC Place Vancouver', ref1: '2D', ref2: '2I' },
-                    { id: 'E83', fecha: 'viernes 3 de julio', hora: 'Horario por confirmar', sede: 'Estadio Miami', ref1: '1H', ref2: '2K' },
-                    { id: 'E84', fecha: 'viernes 3 de julio', hora: 'Horario por confirmar', sede: 'Estadio Dallas', ref1: '1I', ref2: 'Mejor 3ro 6' },
-                    { id: 'E85', fecha: 'sábado 4 de julio', hora: 'Horario por confirmar', sede: 'Estadio Filadelfia', ref1: '1J', ref2: 'Mejor 3ro 7' },
-                    { id: 'E86', fecha: 'sábado 4 de julio', hora: 'Horario por confirmar', sede: 'Estadio Houston', ref1: '2F', ref2: '2L' },
-                    { id: 'E87', fecha: 'domingo 5 de julio', hora: 'Horario por confirmar', sede: 'Estadio Nueva York/NJ', ref1: '1K', ref2: '2G' },
-                    { id: 'E88', fecha: 'domingo 5 de julio', hora: 'Horario por confirmar', sede: 'Estadio Ciudad de México', ref1: '1L', ref2: 'Mejor 3ro 8' }
+                    { id: 'E73', fecha: 'domingo 28 de junio', hora: '1:00 pm', sede: 'SoFi Stadium, Los Ángeles', ref1: 'RSA', ref2: 'CAN' },
+                    { id: 'E74', fecha: 'lunes 29 de junio', hora: '11:00 am', sede: 'NRG Stadium, Houston', ref1: 'BRA', ref2: 'JPN' },
+                    { id: 'E75', fecha: 'lunes 29 de junio', hora: '2:30 pm', sede: 'Gillette Stadium, Foxborough', ref1: 'GER', ref2: 'PAR' },
+                    { id: 'E76', fecha: 'lunes 29 de junio', hora: '7:00 pm', sede: 'Estadio BBVA, Monterrey', ref1: 'NED', ref2: 'MAR' },
+                    { id: 'E77', fecha: 'martes 30 de junio', hora: '11:00 am', sede: 'AT&T Stadium, Arlington', ref1: 'CIV', ref2: 'NOR' },
+                    { id: 'E78', fecha: 'martes 30 de junio', hora: '3:00 pm', sede: 'MetLife Stadium, East Rutherford', ref1: 'FRA', ref2: 'SWE' },
+                    { id: 'E79', fecha: 'martes 30 de junio', hora: '7:00 pm', sede: 'Estadio Azteca, Ciudad de México', ref1: 'MEX', ref2: 'ECU' },
+                    { id: 'E80', fecha: 'miércoles 1 de julio', hora: '10:00 am', sede: 'Mercedes-Benz Stadium, Atlanta', ref1: 'ENG', ref2: 'COD' },
+                    { id: 'E81', fecha: 'miércoles 1 de julio', hora: '2:00 pm', sede: 'Lumen Field, Seattle', ref1: 'BEL', ref2: 'SEN' },
+                    { id: 'E82', fecha: 'miércoles 1 de julio', hora: '6:00 pm', sede: "Levi's Stadium, Santa Clara", ref1: 'USA', ref2: 'BIH' },
+                    { id: 'E83', fecha: 'jueves 2 de julio', hora: '1:00 pm', sede: 'SoFi Stadium, Los Ángeles', ref1: 'ESP', ref2: 'AUT' },
+                    { id: 'E84', fecha: 'jueves 2 de julio', hora: '5:00 pm', sede: 'BMO Field, Toronto', ref1: 'POR', ref2: 'CRO' },
+                    { id: 'E85', fecha: 'jueves 2 de julio', hora: '9:00 pm', sede: 'BC Place, Vancouver', ref1: 'SUI', ref2: 'ALG' },
+                    { id: 'E86', fecha: 'viernes 3 de julio', hora: '12:00 pm', sede: 'AT&T Stadium, Arlington', ref1: 'AUS', ref2: 'EGY' },
+                    { id: 'E87', fecha: 'viernes 3 de julio', hora: '4:00 pm', sede: 'Hard Rock Stadium, Miami', ref1: 'ARG', ref2: 'CPV' },
+                    { id: 'E88', fecha: 'viernes 3 de julio', hora: '7:30 pm', sede: 'Arrowhead Stadium, Kansas City', ref1: 'COL', ref2: 'GHA' }
                 ]
             },
             {
                 fase: "Octavos de Final",
                 partidos: [
-                    { id: 'E89', fecha: 'sábado 4 de julio', hora: 'Horario por confirmar', sede: 'Estadio Filadelfia', ref1: 'E73', ref2: 'E74' },
-                    { id: 'E90', fecha: 'sábado 4 de julio', hora: 'Horario por confirmar', sede: 'Estadio Houston', ref1: 'E75', ref2: 'E76' },
-                    { id: 'E91', fecha: 'domingo 5 de julio', hora: 'Horario por confirmar', sede: 'Estadio Nueva York/NJ', ref1: 'E77', ref2: 'E78' },
+                    { id: 'E89', fecha: 'sábado 4 de julio', hora: 'Horario por confirmar', sede: 'Estadio Filadelfia', ref1: 'E74', ref2: 'E77' },
+                    { id: 'E90', fecha: 'sábado 4 de julio', hora: 'Horario por confirmar', sede: 'Estadio Houston', ref1: 'E73', ref2: 'E76' },
+                    { id: 'E91', fecha: 'domingo 5 de julio', hora: 'Horario por confirmar', sede: 'Estadio Nueva York/NJ', ref1: 'E78', ref2: 'E75' },
                     { id: 'E92', fecha: 'domingo 5 de julio', hora: 'Horario por confirmar', sede: 'Estadio Ciudad de México', ref1: 'E79', ref2: 'E80' },
-                    { id: 'E93', fecha: 'lunes 6 de julio', hora: 'Horario por confirmar', sede: 'Estadio Dallas', ref1: 'E81', ref2: 'E82' },
-                    { id: 'E94', fecha: 'lunes 6 de julio', hora: 'Horario por confirmar', sede: 'Estadio Seattle', ref1: 'E83', ref2: 'E84' },
-                    { id: 'E95', fecha: 'martes 7 de julio', hora: 'Horario por confirmar', sede: 'Estadio Atlanta', ref1: 'E85', ref2: 'E86' },
-                    { id: 'E96', fecha: 'martes 7 de julio', hora: 'Horario por confirmar', sede: 'Estadio BC Place Vancouver', ref1: 'E87', ref2: 'E88' }
+                    { id: 'E93', fecha: 'lunes 6 de julio', hora: 'Horario por confirmar', sede: 'Estadio Dallas', ref1: 'E83', ref2: 'E84' },
+                    { id: 'E94', fecha: 'lunes 6 de julio', hora: 'Horario por confirmar', sede: 'Estadio Seattle', ref1: 'E81', ref2: 'E82' },
+                    { id: 'E95', fecha: 'martes 7 de julio', hora: 'Horario por confirmar', sede: 'Estadio Atlanta', ref1: 'E86', ref2: 'E88' },
+                    { id: 'E96', fecha: 'martes 7 de julio', hora: 'Horario por confirmar', sede: 'Estadio BC Place Vancouver', ref1: 'E85', ref2: 'E87' }
                 ]
             },
             {
                 fase: "Cuartos de Final",
                 partidos: [
-                    { id: 'E97', fecha: 'jueves 9 de julio', hora: 'Horario por confirmar', sede: 'Estadio Boston', ref1: 'E89', ref2: 'E90' },
-                    { id: 'E98', fecha: 'jueves 9 de julio', hora: 'Horario por confirmar', sede: 'Estadio Los Ángeles', ref1: 'E91', ref2: 'E92' },
-                    { id: 'E99', fecha: 'viernes 10 de julio', hora: 'Horario por confirmar', sede: 'Estadio Miami', ref1: 'E93', ref2: 'E94' },
-                    { id: 'E100', fecha: 'viernes 10 de julio', hora: 'Horario por confirmar', sede: 'Estadio Kansas City', ref1: 'E95', ref2: 'E96' }
+                    { id: 'E97', fecha: 'jueves 9 de julio', hora: 'Horario por confirmar', sede: 'Estadio Boston', ref1: 'E90', ref2: 'E91' },
+                    { id: 'E98', fecha: 'viernes 10 de julio', hora: 'Horario por confirmar', sede: 'Estadio Los Ángeles', ref1: 'E93', ref2: 'E94' },
+                    { id: 'E99', fecha: 'sábado 11 de julio', hora: 'Horario por confirmar', sede: 'Estadio Miami', ref1: 'E89', ref2: 'E92' },
+                    { id: 'E100', fecha: 'sábado 11 de julio', hora: 'Horario por confirmar', sede: 'Estadio Kansas City', ref1: 'E95', ref2: 'E96' }
                 ]
             },
             {
@@ -360,9 +365,14 @@
                 ]
             },
             {
-                fase: "Tercer Lugar y Final",
+                fase: "Tercer Lugar",
                 partidos: [
-                    { id: 'E103', fecha: 'sábado 18 de julio', hora: 'Horario por confirmar', sede: 'Estadio Miami', ref1: 'Perdedor E101', ref2: 'Perdedor E102', esTercerLugar: true },
+                    { id: 'E103', fecha: 'sábado 18 de julio', hora: 'Horario por confirmar', sede: 'Estadio Miami', ref1: 'Perdedor E101', ref2: 'Perdedor E102', esTercerLugar: true }
+                ]
+            },
+            {
+                fase: "Final",
+                partidos: [
                     { id: 'E104', fecha: 'domingo 19 de julio', hora: 'Horario por confirmar', sede: 'Estadio Nueva York/NJ', ref1: 'E101', ref2: 'E102', esFinal: true }
                 ]
             }
@@ -426,6 +436,78 @@
             });
             
             localStorage.setItem('mundial2026_datos', JSON.stringify(datosAguardar));
+        }
+
+        function obtenerDatosRespaldo() {
+            guardarEnLocal();
+            return {
+                version: 'Calendario Interactivo FIFA 2026 - respaldo v1',
+                creado: new Date().toISOString(),
+                zonaHoraria: offsetGlobal,
+                datos: JSON.parse(localStorage.getItem('mundial2026_datos') || '{"grupos":{},"eliminatorias":{}}')
+            };
+        }
+
+        function exportarRespaldo() {
+            const respaldo = obtenerDatosRespaldo();
+            const fecha = new Date().toISOString().slice(0, 10);
+            const blob = new Blob([JSON.stringify(respaldo, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const enlace = document.createElement('a');
+            enlace.href = url;
+            enlace.download = `respaldo-mundial-2026-${fecha}.json`;
+            document.body.appendChild(enlace);
+            enlace.click();
+            document.body.removeChild(enlace);
+            URL.revokeObjectURL(url);
+            alert('Respaldo exportado correctamente. Guarda ese archivo JSON para restaurar tus resultados cuando lo necesites.');
+        }
+
+        function importarRespaldo(event) {
+            const archivo = event.target.files && event.target.files[0];
+            if (!archivo) return;
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    const respaldo = JSON.parse(e.target.result);
+                    const datosImportados = respaldo.datos || respaldo;
+
+                    if (!datosImportados.grupos || !datosImportados.eliminatorias) {
+                        alert('El archivo no parece ser un respaldo válido de este calendario.');
+                        event.target.value = '';
+                        return;
+                    }
+
+                    if (!confirm('¿Deseas restaurar este respaldo? Esto reemplazará los resultados guardados actualmente en este navegador.')) {
+                        event.target.value = '';
+                        return;
+                    }
+
+                    localStorage.setItem('mundial2026_datos', JSON.stringify(datosImportados));
+
+                    if (typeof respaldo.zonaHoraria !== 'undefined') {
+                        offsetGlobal = parseInt(respaldo.zonaHoraria);
+                        localStorage.setItem('mundial2026_zona', offsetGlobal);
+                        const selectorZona = document.getElementById('selector-zona');
+                        if (selectorZona) selectorZona.value = String(offsetGlobal);
+                    }
+
+                    inicializarDatos();
+                    calcularMotorGlobal();
+                    renderizarGrupos();
+                    actualizarVistaEliminatorias();
+                    renderizarPorDia();
+
+                    alert('Respaldo importado correctamente. Tus resultados fueron restaurados.');
+                } catch (error) {
+                    console.error('Error importando respaldo', error);
+                    alert('No se pudo importar el respaldo. Verifica que sea un archivo JSON válido.');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            lector.readAsText(archivo, 'UTF-8');
         }
 
         function ajustarHoraString(horaBaseStr, offsetDestino) {
@@ -794,7 +876,13 @@
         }
 
         function getEquipoParaEliminatoria(ref) {
+            if (!ref) return null;
             if (clasificadosDirectos[ref]) return clasificadosDirectos[ref];
+
+            for (const letraGrupo of Object.keys(datosTorneo)) {
+                const equipoDirecto = datosTorneo[letraGrupo].equipos.find(e => e.id === ref);
+                if (equipoDirecto) return { ...equipoDirecto };
+            }
             if (ref.startsWith('Mejor 3ro') && mejoresTerceros.length === 8) {
                 const index = parseInt(ref.replace('Mejor 3ro ', '')) - 1;
                 return mejoresTerceros[index];
